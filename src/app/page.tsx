@@ -433,6 +433,15 @@ export default function Home() {
         setUserEmail(session.user.email ?? "");
         window.setTimeout(() => void loadAccount(session.user), 0);
       } else {
+        if (new URLSearchParams(window.location.search).get("setup") === "password") {
+          window.history.replaceState({}, "", window.location.pathname);
+          setAuthMode("signin");
+          setModal("auth");
+          setAuthFeedback({
+            type: "error",
+            message: "This invitation link is invalid, expired, or has already been used. If you already set your password, sign in with it. Otherwise, ask the administrator to send a new invitation.",
+          });
+        }
         setUserEmail("");
         setUserName("");
         setTeacherCv(emptyTeacherCv);

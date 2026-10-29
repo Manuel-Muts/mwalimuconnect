@@ -29,7 +29,13 @@ export async function POST(request: Request) {
       email: body.email.trim().toLowerCase(),
       password: body.password,
     });
-    if (authError || !authData.user || !authData.session) {
+    if (authError) {
+      if (authError.status === 400) {
+        return NextResponse.json({ error: "Email or password is incorrect, or the email has not been confirmed." }, { status: 401 });
+      }
+      return NextResponse.json({ error: "The sign-in service is temporarily unavailable. Please try again." }, { status: 502 });
+    }
+    if (!authData.user || !authData.session) {
       return NextResponse.json({ error: "Email or password is incorrect, or the email has not been confirmed." }, { status: 401 });
     }
 
