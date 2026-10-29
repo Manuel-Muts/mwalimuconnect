@@ -1816,7 +1816,7 @@ export default function Home() {
         </div>
       </section>
 
-      <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.slice(0, 4).map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.split(" ")[0]}</span></button>)}</nav>
+      <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.slice(0, 4).map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.replace(/^My\s+/, "").split(" ")[0]}</span></button>)}</nav>
 
       {modal && <div className="modal-backdrop" onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}>
         <section className={`modal-card${modal === "institution" || modal === "edit-institution" ? " institution-modal-card" : modal === "vacancy" ? " vacancy-modal-card" : modal === "auth" ? ` auth-modal-card${authMode === "signup" && !loginChallenge ? " is-signup" : ""}` : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">

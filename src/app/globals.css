@@ -652,7 +652,7 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .content-area { width: 100%; margin: 0; }
   .topbar { height: 58px; padding: 0 19px; }
   .page-content { padding: 25px 19px 92px; }
-  .mobile-nav { position: fixed; right: 0; bottom: 0; left: 0; z-index: 5; display: flex; height: calc(62px + env(safe-area-inset-bottom)); align-items: flex-start; justify-content: space-around; padding: 8px 8px env(safe-area-inset-bottom); border-top: 1px solid #e9eee9; background: rgba(255,255,255,.97); backdrop-filter: blur(12px); }
+  .mobile-nav { position: fixed; inset: auto 0 0; z-index: 5; display: flex; height: calc(62px + env(safe-area-inset-bottom)); align-items: flex-start; justify-content: space-around; padding: 8px 8px env(safe-area-inset-bottom); border-top: 1px solid #dfe9df; background: #f1f6f1; box-shadow: 0 -6px 20px rgba(27,55,37,.06); backdrop-filter: blur(12px); }
   .mobile-nav button { display: flex; min-width: 54px; flex-direction: column; align-items: center; gap: 4px; padding: 4px; color: #939c95; border: 0; background: none; font-size: 9px; }
   .mobile-nav button.active { color: #23774c; font-weight: 700; }
   .mobile-nav button.active svg { stroke-width: 2.1; }
