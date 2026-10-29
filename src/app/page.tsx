@@ -1534,6 +1534,7 @@ export default function Home() {
   }
 
   return (
+    <>
     <main className="app-shell">
       {workspaceLoading && <div className="workspace-loading-strip" role="status"><span>Loading your secure workspace…</span></div>}
       {notice && <div className={`notice-toast ${noticeType}`} role={noticeType === "error" ? "alert" : "status"} aria-live={noticeType === "error" ? "assertive" : "polite"}>
@@ -1816,7 +1817,9 @@ export default function Home() {
         </div>
       </section>
 
-      <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.slice(0, 4).map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.replace(/^My\s+/, "").split(" ")[0]}</span></button>)}</nav>
+    </main>
+
+      <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.replace(/^My\s+/, "")}</span></button>)}</nav>
 
       {modal && <div className="modal-backdrop" onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}>
         <section className={`modal-card${modal === "institution" || modal === "edit-institution" ? " institution-modal-card" : modal === "vacancy" ? " vacancy-modal-card" : modal === "auth" ? ` auth-modal-card${authMode === "signup" && !loginChallenge ? " is-signup" : ""}` : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">
@@ -1877,6 +1880,6 @@ export default function Home() {
           </>}
         </section>
       </div>}
-    </main>
+    </>
   );
 }
