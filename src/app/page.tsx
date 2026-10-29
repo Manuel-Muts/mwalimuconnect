@@ -199,10 +199,13 @@ export default function Home() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
   const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [showInvitationPassword, setShowInvitationPassword] = useState(false);
+  const [showInvitationPasswordConfirmation, setShowInvitationPasswordConfirmation] = useState(false);
   const [loginChallenge, setLoginChallenge] = useState<{ id: string; email: string } | null>(null);
   const [authFeedback, setAuthFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
   const [passwordSetupRequired, setPasswordSetupRequired] = useState(false);
@@ -248,7 +251,9 @@ export default function Home() {
 
     async function loadAccount(user: { id: string; email?: string; user_metadata?: { full_name?: string } }) {
       setEnteredWorkspace(false);
+      setWorkspaceLoading(true);
       if (new URLSearchParams(window.location.search).get("email_confirmed") === "1") {
+        setWorkspaceLoading(false);
         if (!emailConfirmationHandled.current) {
           emailConfirmationHandled.current = true;
           window.setTimeout(async () => {
@@ -271,6 +276,7 @@ export default function Home() {
         return;
       }
       if (new URLSearchParams(window.location.search).get("setup") === "password") {
+        setWorkspaceLoading(false);
         setPasswordSetupRequired(true);
         setUserEmail(user.email ?? "");
         return;
@@ -286,18 +292,21 @@ export default function Home() {
           const message = `Could not load account access: ${error.message}`;
           setLandingMessage(message);
           setAuthFeedback({ type: "error", message });
+          setWorkspaceLoading(false);
           return;
         }
         if (!profile) {
           const message = "Your account profile is missing. Contact the platform administrator.";
           setLandingMessage(message);
           setAuthFeedback({ type: "error", message });
+          setWorkspaceLoading(false);
           return;
         }
         if (!isRole(profile.role)) {
           const message = "Your account does not have an authorized workspace role. Contact the platform administrator.";
           setLandingMessage(message);
           setAuthFeedback({ type: "error", message });
+          setWorkspaceLoading(false);
           return;
         }
         const accountName = profile.full_name?.trim() || user.user_metadata?.full_name?.trim() || "";
@@ -357,6 +366,7 @@ export default function Home() {
             const message = `Could not load subscription access: ${subscriptionError.message}`;
             setLandingMessage(message);
             setAuthFeedback({ type: "error", message });
+            setWorkspaceLoading(false);
             return;
           }
           setTeacherSubscriptionExpiresAt(subscription?.expires_at ?? null);
@@ -369,6 +379,7 @@ export default function Home() {
             const message = "Your school account is not linked to an institution. Contact the platform administrator.";
             setLandingMessage(message);
             setAuthFeedback({ type: "error", message });
+            setWorkspaceLoading(false);
             return;
           }
           const { data: institution, error: institutionError } = await client
@@ -381,6 +392,7 @@ export default function Home() {
             const message = `Could not load school details: ${institutionError.message}`;
             setLandingMessage(message);
             setAuthFeedback({ type: "error", message });
+            setWorkspaceLoading(false);
             return;
           }
           setSchoolCounty(institution.county);
@@ -400,6 +412,7 @@ export default function Home() {
             const message = `Could not load subscription access: ${subscriptionError.message}`;
             setLandingMessage(message);
             setAuthFeedback({ type: "error", message });
+            setWorkspaceLoading(false);
             return;
           }
           setSubscriptionExpiresAt(subscription?.expires_at ?? null);
@@ -419,11 +432,13 @@ export default function Home() {
         }
         setUserEmail(user.email ?? "");
         setEnteredWorkspace(true);
+        setWorkspaceLoading(false);
       } catch (error) {
         if (!active) return;
         const message = error instanceof Error ? `Could not load your workspace: ${error.message}` : "Could not load your workspace. Please try again.";
         setLandingMessage(message);
         setAuthFeedback({ type: "error", message });
+        setWorkspaceLoading(false);
       }
     }
 
@@ -433,6 +448,7 @@ export default function Home() {
         setUserEmail(session.user.email ?? "");
         window.setTimeout(() => void loadAccount(session.user), 0);
       } else {
+        setWorkspaceLoading(false);
         if (new URLSearchParams(window.location.search).get("setup") === "password") {
           window.history.replaceState({}, "", window.location.pathname);
           setAuthMode("signin");
@@ -881,7 +897,6 @@ export default function Home() {
       if (error) throw new Error(`Could not complete sign-in: ${error.message}`);
       setLoginChallenge(null);
       setModal(null);
-      setNotice("Signed in successfully. Loading your secure workspace…");
     } catch (error) {
       setAuthFeedback({ type: "error", message: error instanceof Error ? error.message : "Could not verify the sign-in code." });
     } finally {
@@ -1384,8 +1399,8 @@ export default function Home() {
             <p className="modal-description">Choose a password to finish setting up your institution account.</p>
             {authFeedback && <p className={`auth-feedback ${authFeedback.type}`} role={authFeedback.type === "error" ? "alert" : "status"}>{authFeedback.message}</p>}
             <form className="modal-form" onSubmit={(event) => void setInvitationPassword(event)} aria-busy={loading}>
-              <label>Password<input name="password" type="password" minLength={8} autoComplete="new-password" required disabled={loading} /></label>
-              <label>Confirm password<input name="password_confirmation" type="password" minLength={8} autoComplete="new-password" required disabled={loading} /></label>
+              <label>Password<span className="password-input-wrap"><input id="invitation-password" name="password" type={showInvitationPassword ? "text" : "password"} minLength={8} autoComplete="new-password" required disabled={loading} /><button className="password-visibility-toggle" type="button" aria-label={showInvitationPassword ? "Hide password" : "Show password"} aria-pressed={showInvitationPassword} aria-controls="invitation-password" onClick={() => setShowInvitationPassword((visible) => !visible)}><Icon name={showInvitationPassword ? "eyeOff" : "eye"} size={17} /></button></span></label>
+              <label>Confirm password<span className="password-input-wrap"><input id="invitation-password-confirmation" name="password_confirmation" type={showInvitationPasswordConfirmation ? "text" : "password"} minLength={8} autoComplete="new-password" required disabled={loading} /><button className="password-visibility-toggle" type="button" aria-label={showInvitationPasswordConfirmation ? "Hide confirmation password" : "Show confirmation password"} aria-pressed={showInvitationPasswordConfirmation} aria-controls="invitation-password-confirmation" onClick={() => setShowInvitationPasswordConfirmation((visible) => !visible)}><Icon name={showInvitationPasswordConfirmation ? "eyeOff" : "eye"} size={17} /></button></span></label>
               <button className="primary-button modal-submit" disabled={loading}>{loading ? "Setting password…" : "Set password and continue"} <Icon name="arrow" size={15} /></button>
             </form>
           </section>
@@ -1394,7 +1409,8 @@ export default function Home() {
     }
     return (
       <>
-        <LandingPage
+      {workspaceLoading && <div className="workspace-loading-strip" role="status"><span>Loading your secure workspace…</span></div>}
+      <LandingPage
           message=""
           onBrowse={() => {
             setAuthMode("signin");
@@ -1432,6 +1448,7 @@ export default function Home() {
 
   return (
     <main className="app-shell">
+      {workspaceLoading && <div className="workspace-loading-strip" role="status"><span>Loading your secure workspace…</span></div>}
       {role === "teacher" && countySetupRequired && <div className="modal-backdrop"><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="county-setup-heading"><div className="modal-mark"><span className="brand-mark"><span /></span></div><span className="job-category">YOUR LOCAL OPPORTUNITIES</span><h2 id="county-setup-heading">Choose your county.</h2><p className="modal-description">Your free teacher account includes vacancies in one county. This setting can only be chosen once.</p><form className="modal-form" onSubmit={(event) => void saveTeacherCounty(event)}><label>Your county<select name="teacher_county" defaultValue="" required><option value="" disabled>Select your county</option>{KENYAN_COUNTIES.map((countyName) => <option key={countyName} value={countyName}>{countyName}</option>)}</select></label><button className="primary-button modal-submit" disabled={loading}>{loading ? "Saving…" : "Save my county"} <Icon name="arrow" size={15} /></button></form></section></div>}
       <aside className="sidebar">
         <a className="brand" href="#" aria-label="MwalimuConnect home">
