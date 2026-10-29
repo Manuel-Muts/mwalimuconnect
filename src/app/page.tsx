@@ -1535,6 +1535,23 @@ export default function Home() {
 
   return (
     <>
+      <header className="topbar">
+        <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{role === "institution" && activeNav === "My vacancies" ? "Vacancies" : activeNav}</strong></div>
+        <div className="topbar-actions">
+          <span className="connection-pill connected"><i />Secure workspace</span>
+          <button className="icon-button notification-button" aria-label="Notifications"><Icon name="bell" size={19} /></button>
+          <div className="account-menu">
+            <button className="account-trigger" aria-label={`Account menu for ${roleInfo[role].name}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} onClick={() => setAccountMenuOpen((open) => !open)}>
+              <Icon name="profile" size={19} />
+            </button>
+            {accountMenuOpen && <div className="account-dropdown" role="menu">
+              <div className="account-dropdown-role">{roleInfo[role].name}</div>
+              <button role="menuitem" onClick={() => { setAccountMenuOpen(false); setModal("profile"); }}><Icon name="profile" size={16} /> Profile</button>
+              <button role="menuitem" onClick={() => { setAccountMenuOpen(false); void signOut(); }}><span aria-hidden="true">↪</span> Log out</button>
+            </div>}
+          </div>
+        </div>
+      </header>
     <main className="app-shell">
       {workspaceLoading && <div className="workspace-loading-strip" role="status"><span>Loading your secure workspace…</span></div>}
       {notice && <div className={`notice-toast ${noticeType}`} role={noticeType === "error" ? "alert" : "status"} aria-live={noticeType === "error" ? "assertive" : "polite"}>
@@ -1572,24 +1589,6 @@ export default function Home() {
       </aside>
 
       <section className="content-area">
-        <header className="topbar">
-          <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{role === "institution" && activeNav === "My vacancies" ? "Vacancies" : activeNav}</strong></div>
-          <div className="topbar-actions">
-            <span className="connection-pill connected"><i />Secure workspace</span>
-            <button className="icon-button notification-button" aria-label="Notifications"><Icon name="bell" size={19} /></button>
-            <div className="account-menu">
-              <button className="account-trigger" aria-label={`Account menu for ${roleInfo[role].name}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} onClick={() => setAccountMenuOpen((open) => !open)}>
-                <Icon name="profile" size={19} />
-              </button>
-              {accountMenuOpen && <div className="account-dropdown" role="menu">
-                <div className="account-dropdown-role">{roleInfo[role].name}</div>
-                <button role="menuitem" onClick={() => { setAccountMenuOpen(false); setModal("profile"); }}><Icon name="profile" size={16} /> Profile</button>
-                <button role="menuitem" onClick={() => { setAccountMenuOpen(false); void signOut(); }}><span aria-hidden="true">↪</span> Log out</button>
-              </div>}
-            </div>
-          </div>
-        </header>
-
         <div className="page-content">
           <div className="welcome-row">
             <div>

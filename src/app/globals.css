@@ -213,8 +213,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .help-card button { display: flex; align-items: center; gap: 5px; padding: 0; color: #287750; border: 0; background: none; font-size: 10px; font-weight: 700; }
 .top-avatar { display: grid; width: 33px; height: 33px; flex: 0 0 auto; place-items: center; color: #38644d; border-radius: 50%; background: #e5eee5; font-size: 10px; font-weight: 700; }
 
-.content-area { width: calc(100% - 252px); min-height: 100vh; margin-left: 252px; }
-.topbar { position: sticky; top: 0; z-index: 2; display: flex; height: 66px; align-items: center; justify-content: space-between; padding: 0 43px; border-bottom: 1px solid #dfe9df; background: rgba(237,245,239,.96); backdrop-filter: blur(12px); }
+.content-area { width: calc(100% - 252px); min-height: 100vh; margin-left: 252px; padding-top: 66px; }
+.topbar { position: fixed; top: 0; right: 0; left: 252px; z-index: 40; display: flex; height: 66px; align-items: center; justify-content: space-between; padding: 0 43px; border-bottom: 1px solid #dfe9df; background: rgba(237,245,239,.96); backdrop-filter: blur(12px); }
 .breadcrumb { display: flex; align-items: center; gap: 11px; color: #8d9690; font-size: 11px; }
 .breadcrumb strong { color: #33423a; font-weight: 600; }
 .crumb-slash { color: #c4cbc6; }
@@ -642,7 +642,7 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 @media (max-width: 1100px) {
   .sidebar { width: 220px; padding-right: 14px; padding-left: 14px; }
   .content-area { width: calc(100% - 220px); margin-left: 220px; }
-  .topbar { padding-right: 27px; padding-left: 27px; }
+  .topbar { left: 220px; padding-right: 27px; padding-left: 27px; }
   .page-content { padding-right: 27px; padding-left: 27px; }
   .stats-row { gap: 13px; }
   .stat-item { gap: 7px; }
@@ -652,11 +652,14 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .sidebar { display: none; }
   .app-shell { width: 100%; }
   .content-area { width: 100%; min-width: 0; margin: 0; padding-top: 58px; }
-  .topbar { position: fixed; top: 0; right: 0; left: 0; z-index: 40; display: flex; width: 100%; min-width: 0; height: 58px; gap: 10px; padding: 0 19px; }
+  .topbar { right: 0; left: 0; width: 100%; min-width: 0; height: 58px; gap: 10px; padding: 0 19px; }
   .breadcrumb { min-width: 0; flex: 1 1 auto; overflow: hidden; white-space: nowrap; }
   .breadcrumb strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topbar-actions { flex: 0 0 auto; }
   .page-content { min-width: 0; padding: 25px 19px 92px; }
+  .filter-bar { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .search-field { min-width: 0; grid-column: 1 / -1; }
+  .select-field, .level-select { min-width: 0; }
   .mobile-nav { position: fixed; right: 0; bottom: 0; left: 0; z-index: 50; display: flex; width: 100%; height: calc(62px + env(safe-area-inset-bottom)); align-items: flex-start; justify-content: flex-start; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; padding: 8px 8px env(safe-area-inset-bottom); border-top: 1px solid #dfe9df; background: #f1f6f1; box-shadow: 0 -6px 20px rgba(27,55,37,.06); backdrop-filter: blur(12px); scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
   .mobile-nav button { display: flex; min-width: 68px; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 4px; padding: 4px 6px; color: #939c95; border: 0; background: none; font-size: 9px; white-space: nowrap; }
   .mobile-nav button.active { color: #23774c; font-weight: 700; }
