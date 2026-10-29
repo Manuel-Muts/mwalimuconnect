@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { getSubCountiesInCounty } from "kenya-locations/sub-counties";
 import { getSupabase } from "@/lib/supabase";
 import { getVacancyLevelsForInstitutionType, INSTITUTION_TYPES, KENYAN_COUNTIES } from "@/lib/school-options";
@@ -44,9 +44,15 @@ type TeacherCv = {
 };
 type InstitutionApplicant = {
   id: string;
+  vacancyId: string;
   vacancyTitle: string;
   appliedAt: string;
   cv: TeacherCv;
+};
+type InstitutionActiveVacancy = {
+  id: string;
+  title: string;
+  applicationDeadline: string;
 };
 type RegisteredInstitution = {
   id: string;
@@ -181,6 +187,8 @@ export default function Home() {
   const [cvSaved, setCvSaved] = useState(false);
   const [hasSavedCv, setHasSavedCv] = useState(false);
   const [institutionApplicants, setInstitutionApplicants] = useState<InstitutionApplicant[]>([]);
+  const [institutionActiveVacancies, setInstitutionActiveVacancies] = useState<InstitutionActiveVacancy[]>([]);
+  const [selectedInstitutionVacancyId, setSelectedInstitutionVacancyId] = useState("");
   const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [registeredInstitutions, setRegisteredInstitutions] = useState<RegisteredInstitution[]>([]);
   const [institutionTotalCount, setInstitutionTotalCount] = useState(0);
@@ -189,7 +197,6 @@ export default function Home() {
   const [institutionsRefreshKey, setInstitutionsRefreshKey] = useState(0);
   const [institutionPage, setInstitutionPage] = useState(1);
   const institutionPageCache = useRef(new Map<number, InstitutionPageCacheEntry>());
-  const [applicantVacancyTitle, setApplicantVacancyTitle] = useState("");
   const [expandedApplicantId, setExpandedApplicantId] = useState("");
   const [modal, setModal] = useState<"auth" | "subscription" | "institution" | "edit-institution" | "delete-institution" | "vacancy" | "profile" | null>(null);
   const [institutionRegistrationError, setInstitutionRegistrationError] = useState("");
@@ -203,7 +210,8 @@ export default function Home() {
   const [showInvitationPasswordConfirmation, setShowInvitationPasswordConfirmation] = useState(false);
   const [loginChallenge, setLoginChallenge] = useState<{ id: string; email: string } | null>(null);
   const [authFeedback, setAuthFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [notice, setNotice] = useState("");
+  const [notice, setNoticeMessage] = useState("");
+  const [noticeType, setNoticeType] = useState<"success" | "error">("success");
   const [loading, setLoading] = useState(false);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
@@ -236,6 +244,16 @@ export default function Home() {
 
   const accountDisplayName = userName || userEmail.split("@")[0] || "Your profile";
   const accountInitials = initialsFor(userName || userEmail || "Account");
+
+  function setNotice(message: string) {
+    setNoticeMessage(message);
+    if (!message) {
+      setNoticeType("success");
+      return;
+    }
+    const successMessage = /^(Your password is set\.|Your county has been saved\.|Your CV has been updated\.|Your CV is saved|Application submitted successfully|STK push sent\.|Institution registered\.|Institution details updated\.|Institution and linked head account deleted\.|Your vacancy is now live)/i.test(message);
+    setNoticeType(successMessage ? "success" : "error");
+  }
 
   function updateTeacherCv(field: keyof TeacherCv, value: string) {
     setTeacherCv((current) => ({ ...current, [field]: value }));
@@ -398,25 +416,30 @@ export default function Home() {
           setSchoolCounty(institution.county);
           setSchoolSubcounty(institution.subcounty ?? "");
           setSchoolLevel(institution.school_level ?? "");
-          const { data: subscription, error: subscriptionError } = await client
-            .from("subscriptions")
-            .select("expires_at")
-            .eq("institution_id", profile.institution_id)
-            .eq("status", "active")
-            .gt("expires_at", new Date().toISOString())
-            .order("expires_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (!active) return;
-          if (subscriptionError) {
-            const message = `Could not load subscription access: ${subscriptionError.message}`;
-            setLandingMessage(message);
-            setAuthFeedback({ type: "error", message });
-            setWorkspaceLoading(false);
-            return;
+          if (process.env.NODE_ENV === "development") {
+            setInstitutionHasAccess(false);
+            setSubscriptionExpiresAt(null);
+          } else {
+            const { data: subscription, error: subscriptionError } = await client
+              .from("subscriptions")
+              .select("expires_at")
+              .eq("institution_id", profile.institution_id)
+              .eq("status", "active")
+              .gt("expires_at", new Date().toISOString())
+              .order("expires_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (!active) return;
+            if (subscriptionError) {
+              const message = `Could not load subscription access: ${subscriptionError.message}`;
+              setLandingMessage(message);
+              setAuthFeedback({ type: "error", message });
+              setWorkspaceLoading(false);
+              return;
+            }
+            setSubscriptionExpiresAt(subscription?.expires_at ?? null);
+            setInstitutionHasAccess(Boolean(subscription));
           }
-          setSubscriptionExpiresAt(subscription?.expires_at ?? null);
-          setInstitutionHasAccess(Boolean(subscription));
         }
         if (profile.role === "teacher") {
           const { data: applications, error: applicationError } = await client
@@ -604,6 +627,7 @@ export default function Home() {
   useEffect(() => {
     const supabase = getSupabase();
     if (!enteredWorkspace || !supabase || (role !== "teacher" && role !== "institution")) return;
+    if (role === "institution" && process.env.NODE_ENV === "development") return;
     if ((role === "teacher" && !teacherId.trim()) || (role === "institution" && !institutionId.trim())) return;
     let active = true;
     const refreshSubscription = async () => {
@@ -647,40 +671,47 @@ export default function Home() {
     let active = true;
     setApplicantsLoading(true);
     setInstitutionApplicants([]);
-    setApplicantVacancyTitle("");
+    setInstitutionActiveVacancies([]);
     setExpandedApplicantId("");
     void (async () => {
-      const { data: latestVacancy, error: vacancyError } = await supabase
+      const { data: vacancies, error: vacancyError } = await supabase
         .from("vacancies")
-        .select("id,title")
+        .select("id,title,application_deadline")
         .eq("institution_id", institutionId)
         .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
       if (!active) return;
       if (vacancyError) {
-        setNotice(`Could not find the latest posted vacancy: ${vacancyError.message}`);
-        setInstitutionApplicants([]);
-        setApplicantVacancyTitle("");
+        setNotice(`Could not load active vacancies for your institution: ${vacancyError.message}`);
         setApplicantsLoading(false);
         return;
       }
-      if (!latestVacancy) {
-        setInstitutionApplicants([]);
-        setApplicantVacancyTitle("");
+      const activeVacancies = (vacancies ?? [])
+        .filter((vacancy) => isVacancyOpen(vacancy.application_deadline))
+        .map((vacancy) => ({
+          id: vacancy.id,
+          title: vacancy.title,
+          applicationDeadline: vacancy.application_deadline,
+        }));
+      setInstitutionActiveVacancies(activeVacancies);
+      const activeVacancyIds = new Set(activeVacancies.map((vacancy) => vacancy.id));
+      setSelectedInstitutionVacancyId((current) => activeVacancyIds.has(current)
+        ? current
+        : activeVacancies[0]?.id ?? "");
+      if (activeVacancies.length === 0) {
         setApplicantsLoading(false);
         return;
       }
-      setApplicantVacancyTitle(latestVacancy.title);
+
+      const vacancyTitles = new Map(activeVacancies.map((vacancy) => [vacancy.id, vacancy.title]));
       const { data: applications, error: applicationsError } = await supabase
         .from("applications")
-        .select("id,teacher_id,created_at")
-        .eq("vacancy_id", latestVacancy.id)
+        .select("id,vacancy_id,teacher_id,created_at")
+        .in("vacancy_id", activeVacancies.map((vacancy) => vacancy.id))
         .order("created_at", { ascending: true });
       if (!active) return;
       if (applicationsError) {
-        setNotice(`Could not load applications for ${latestVacancy.title}: ${applicationsError.message}`);
+        setNotice(`Could not load applications for your active vacancies: ${applicationsError.message}`);
         setInstitutionApplicants([]);
         setApplicantsLoading(false);
         return;
@@ -705,10 +736,12 @@ export default function Home() {
       const cvsByTeacher = new Map((cvs ?? []).map((cv) => [cv.teacher_id, cv]));
       setInstitutionApplicants(rows.flatMap((application) => {
         const cv = cvsByTeacher.get(application.teacher_id);
-        if (!cv) return [];
+        const vacancyTitle = vacancyTitles.get(application.vacancy_id);
+        if (!cv || !vacancyTitle) return [];
         return [{
           id: application.id,
-          vacancyTitle: latestVacancy.title,
+          vacancyId: application.vacancy_id,
+          vacancyTitle,
           appliedAt: application.created_at,
           cv: {
             full_name: cv.full_name,
@@ -765,8 +798,13 @@ export default function Home() {
   const visibleVacancies = activeNav === "My applications"
     ? vacancies.filter((job) => applied.includes(job.id))
     : filteredVacancies.filter((job) => activeNav === "Saved jobs" ? saved.includes(job.id) : true);
+  const institutionVacancies = vacancies.filter((job) => institutionId && job.institutionId === institutionId);
+  const selectedInstitutionVacancy = institutionActiveVacancies.find((vacancy) => vacancy.id === selectedInstitutionVacancyId);
+  const selectedInstitutionApplicants = institutionApplicants.filter((applicant) => applicant.vacancyId === selectedInstitutionVacancyId);
   const accountHasFullAccess = role === "teacher" ? teacherHasAccess : institutionHasAccess;
   const accountSubscriptionExpiresAt = role === "teacher" ? teacherSubscriptionExpiresAt : subscriptionExpiresAt;
+  const institutionSubscriptionBypassed = role === "institution" && process.env.NODE_ENV === "development";
+  const institutionCanPublish = institutionHasAccess || institutionSubscriptionBypassed;
   const subscriptionPlanOptions = <section className="subscription-plans" aria-label="Subscription plans">
     <div className="section-heading"><div><h2>{role === "teacher" ? "Unlock nationwide opportunities" : "Choose your school subscription"}</h2><p>{role === "teacher" ? "Get full access to vacancies across Kenya." : "Keep your school's vacancies active and visible to teachers."}</p></div></div>
     <div className="subscription-plan-grid">
@@ -1089,10 +1127,31 @@ export default function Home() {
       setNotice("Add and save your candidate statement before applying. Explain why you are a good fit for the role.");
       return;
     }
-    const { error } = await supabase.from("applications").insert({ vacancy_id: job.id, teacher_id: user.user.id });
-    if (error) {
-      setNotice(error.code === "23505" ? "You have already applied for this vacancy." : `Application failed: ${error.message}`);
-      return;
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw new Error(`Could not verify your teacher session: ${sessionError.message}`);
+        if (!sessionData.session) throw new Error("Your session has expired. Please sign in again.");
+        const response = await fetch("/api/teacher/applications", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify({ vacancy_id: job.id }),
+        });
+        const result: { error?: string } = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Could not submit your application.");
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : "Could not submit your application.");
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("applications").insert({ vacancy_id: job.id, teacher_id: user.user.id });
+      if (error) {
+        setNotice(error.code === "23505" ? "You have already applied for this vacancy." : `Application failed: ${error.message}`);
+        return;
+      }
     }
     setApplied((current) => [...current, job.id]);
     setActiveNav("My applications");
@@ -1237,7 +1296,7 @@ export default function Home() {
 
   async function createVacancy(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!institutionHasAccess) {
+    if (!institutionCanPublish) {
       setActiveNav("Subscription");
       setNotice("An active subscription is required to publish vacancies.");
       return;
@@ -1308,18 +1367,46 @@ export default function Home() {
       application_deadline: applicationDeadline,
       status: "published",
     };
-    const { data: createdVacancy, error } = await supabase
-      .from("vacancies")
-      .insert(newVacancy)
-      .select("id")
-      .single();
-    setLoading(false);
-    if (error) {
-      setNotice(`Could not publish vacancy: ${error.message}`);
-      return;
+    let createdVacancyId: string;
+    if (institutionSubscriptionBypassed) {
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw new Error(`Could not verify your institution session: ${sessionError.message}`);
+        if (!sessionData.session) throw new Error("Your session has expired. Please sign in again.");
+        const response = await fetch("/api/institution/vacancies", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify(newVacancy),
+        });
+        const result: { vacancy?: { id?: string }; error?: string } = await response.json();
+        if (!response.ok || typeof result.vacancy?.id !== "string") {
+          throw new Error(result.error ?? "Could not publish the vacancy.");
+        }
+        createdVacancyId = result.vacancy.id;
+      } catch (error) {
+        setLoading(false);
+        setNotice(error instanceof Error ? error.message : "Could not publish the vacancy.");
+        return;
+      }
+    } else {
+      const { data: createdVacancy, error } = await supabase
+        .from("vacancies")
+        .insert(newVacancy)
+        .select("id")
+        .single();
+      if (error) {
+        setLoading(false);
+        setNotice(`Could not publish vacancy: ${error.message}`);
+        return;
+      }
+      createdVacancyId = createdVacancy.id;
     }
+    setLoading(false);
     setVacancies((current) => [{
-      id: createdVacancy.id,
+      id: createdVacancyId,
       title: newVacancy.title,
       description: newVacancy.description,
       institution: "Your school",
@@ -1371,7 +1458,7 @@ export default function Home() {
           </form>
           <div className="switch-auth"><button disabled={loading} onClick={() => void resendLoginOtp()}>Resend code</button><span> · </span><button disabled={loading} onClick={() => { setLoginChallenge(null); setAuthFeedback(null); }}>Use a different sign-in</button></div>
         </> : <>
-          <form className="modal-form" onSubmit={(event) => void submitAuth(event)} aria-busy={loading}>
+          <form className={`modal-form${authMode === "signup" ? " auth-signup-form" : ""}`} onSubmit={(event) => void submitAuth(event)} aria-busy={loading}>
             {authMode === "signup" && <label>Full name<input name="full_name" placeholder="Your full name" autoComplete="name" required disabled={loading} /></label>}
             {authMode === "signup" && <label>Your county<select name="county" defaultValue="" required disabled={loading}><option value="" disabled>Select your county</option>{KENYAN_COUNTIES.map((countyName) => <option key={countyName} value={countyName}>{countyName}</option>)}</select></label>}
             <label>Email address<input name="email" type="email" placeholder="you@example.com" autoComplete="email" required disabled={loading} /></label>
@@ -1441,7 +1528,7 @@ export default function Home() {
           <span>{authFeedback?.message ?? landingMessage}</span>
           <button onClick={() => { setAuthFeedback(null); setLandingMessage(""); }} aria-label="Dismiss notification"><Icon name="close" size={17} /></button>
         </div>}
-        {modal === "auth" && <div className="modal-backdrop" onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-heading">{authForm()}</section></div>}
+        {modal === "auth" && <div className="modal-backdrop" onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}><section className={`modal-card auth-modal-card${authMode === "signup" && !loginChallenge ? " is-signup" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">{authForm()}</section></div>}
       </>
     );
   }
@@ -1449,6 +1536,10 @@ export default function Home() {
   return (
     <main className="app-shell">
       {workspaceLoading && <div className="workspace-loading-strip" role="status"><span>Loading your secure workspace…</span></div>}
+      {notice && <div className={`notice-toast ${noticeType}`} role={noticeType === "error" ? "alert" : "status"} aria-live={noticeType === "error" ? "assertive" : "polite"}>
+        <div><strong>{noticeType === "success" ? "Done" : "Please check this"}</strong><span>{notice}</span></div>
+        <button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="close" size={17} /></button>
+      </div>}
       {role === "teacher" && countySetupRequired && <div className="modal-backdrop"><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="county-setup-heading"><div className="modal-mark"><span className="brand-mark"><span /></span></div><span className="job-category">YOUR LOCAL OPPORTUNITIES</span><h2 id="county-setup-heading">Choose your county.</h2><p className="modal-description">Your free teacher account includes vacancies in one county. This setting can only be chosen once.</p><form className="modal-form" onSubmit={(event) => void saveTeacherCounty(event)}><label>Your county<select name="teacher_county" defaultValue="" required><option value="" disabled>Select your county</option>{KENYAN_COUNTIES.map((countyName) => <option key={countyName} value={countyName}>{countyName}</option>)}</select></label><button className="primary-button modal-submit" disabled={loading}>{loading ? "Saving…" : "Save my county"} <Icon name="arrow" size={15} /></button></form></section></div>}
       <aside className="sidebar">
         <a className="brand" href="#" aria-label="MwalimuConnect home">
@@ -1458,7 +1549,9 @@ export default function Home() {
         <div className="workspace-label">WORKSPACE</div>
         <nav className="side-nav" aria-label="Main navigation">
           {roleInfo[role].nav.map((item) => {
-            const label = role === "teacher" && item === "Discover" ? "Opportunities" : item;
+            const label = role === "teacher" && item === "Discover"
+              ? "Opportunities"
+              : role === "institution" && item === "My vacancies" ? "Vacancies" : item;
             return (
               <button key={item} className={`nav-item ${activeNav === item ? "active" : ""}`} onClick={() => setActiveNav(item)}>
                 <Icon name={navIcon(item)} size={18} /><span>{label}</span>
@@ -1479,19 +1572,16 @@ export default function Home() {
 
       <section className="content-area">
         <header className="topbar">
-          <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{activeNav}</strong></div>
+          <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{role === "institution" && activeNav === "My vacancies" ? "Vacancies" : activeNav}</strong></div>
           <div className="topbar-actions">
             <span className="connection-pill connected"><i />Secure workspace</span>
             <button className="icon-button notification-button" aria-label="Notifications"><Icon name="bell" size={19} /></button>
             <div className="account-menu">
-              <button className="account-trigger" aria-label={`Account: ${accountDisplayName}, ${userEmail}, ${roleInfo[role].name}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} onClick={() => setAccountMenuOpen((open) => !open)}>
+              <button className="account-trigger" aria-label={`Account menu for ${roleInfo[role].name}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} onClick={() => setAccountMenuOpen((open) => !open)}>
                 <Icon name="profile" size={19} />
               </button>
               {accountMenuOpen && <div className="account-dropdown" role="menu">
-                <div className="account-dropdown-identity">
-                  <span className="avatar">{accountInitials}</span>
-                  <span><strong>{accountDisplayName}</strong><small>{userEmail}</small><small>{roleInfo[role].name}</small></span>
-                </div>
+                <div className="account-dropdown-role">{roleInfo[role].name}</div>
                 <button role="menuitem" onClick={() => { setAccountMenuOpen(false); setModal("profile"); }}><Icon name="profile" size={16} /> Profile</button>
                 <button role="menuitem" onClick={() => { setAccountMenuOpen(false); void signOut(); }}><span aria-hidden="true">↪</span> Log out</button>
               </div>}
@@ -1500,23 +1590,23 @@ export default function Home() {
         </header>
 
         <div className="page-content">
-          {notice && <div className="notice" role="status">{notice}<button onClick={() => setNotice("")} aria-label="Dismiss message"><Icon name="close" size={16} /></button></div>}
           <div className="welcome-row">
             <div>
+              <p className="welcome-greeting">👋 Welcome back, {userName || "there"}.</p>
               <div className="eyebrow"><span className="eyebrow-dot" /> KENYA&apos;S EDUCATION COMMUNITY</div>
               <h1>{heading}<span className="title-period">.</span></h1>
               <p className="page-subtitle">{role === "teacher" ? "A meaningful role can change everything. Let’s find yours." : role === "institution" ? "Find the right people to help your learners flourish." : "Helping great schools and great educators find each other."}</p>
             </div>
             <div className="welcome-actions">
               {role === "teacher" ? <><button className="outline-button" onClick={() => setActiveNav("Saved jobs")}><Icon name="saved" size={17} /> Saved <span className="saved-bubble">{saved.length}</span></button><button className="primary-button" onClick={() => setActiveNav("Subscription")}>{teacherHasAccess ? "Manage full access" : "Full access"} <Icon name="arrow" size={15} /></button></>
-                : role === "institution" ? institutionHasAccess ? <button className="primary-button" onClick={() => setModal("vacancy")}><span className="plus">+</span> Post a vacancy</button> : <button className="primary-button" onClick={() => setActiveNav("Subscription")}>Subscribe to post vacancies <Icon name="arrow" size={15} /></button>
+                : role === "institution" ? institutionCanPublish ? <button className="primary-button" onClick={() => setModal("vacancy")}><span className="plus">+</span> Post a vacancy</button> : <button className="primary-button" onClick={() => setActiveNav("Subscription")}>Subscribe to post vacancies <Icon name="arrow" size={15} /></button>
                   : activeNav === "Institutions" ? <button className="primary-button" onClick={() => { setInstitutionRegistrationError(""); setSchoolRegistrationCounty(""); setModal("institution"); }}><span className="plus">+</span> Add institution</button> : null}
             </div>
           </div>
-          {role === "institution" && <div className={`subscription-access-note ${institutionHasAccess ? "is-active" : "is-readonly"}`}>
-            <span className="status-badge">{institutionHasAccess ? "Subscription active" : "Read-only access"}</span>
-            <span>{institutionHasAccess && subscriptionExpiresAt ? `Access through ${new Date(subscriptionExpiresAt).toLocaleDateString()}.` : "An active subscription is required to publish vacancies."}</span>
-            <button className="text-button" onClick={() => setActiveNav("Subscription")}>{institutionHasAccess ? "Renew subscription" : "Subscribe"} <Icon name="arrow" size={15} /></button>
+          {role === "institution" && <div className={`subscription-access-note ${institutionCanPublish ? "is-active" : "is-readonly"}`}>
+            <span className="status-badge">{institutionSubscriptionBypassed ? "Development access" : institutionHasAccess ? "Subscription active" : "Read-only access"}</span>
+            <span>{institutionSubscriptionBypassed ? "Subscription checks are disabled in development." : institutionHasAccess && subscriptionExpiresAt ? `Access through ${new Date(subscriptionExpiresAt).toLocaleDateString()}.` : "An active subscription is required to publish vacancies."}</span>
+            <button className="text-button" onClick={() => setActiveNav("Subscription")}>{institutionSubscriptionBypassed ? "View subscription plans" : institutionHasAccess ? "Renew subscription" : "Subscribe"} <Icon name="arrow" size={15} /></button>
           </div>}
 
           {role === "teacher" && activeNav === "Discover" && <>
@@ -1612,28 +1702,54 @@ export default function Home() {
           </section>}
 
           {role === "institution" && <section className="panel-card role-panel">
-            <div className="role-panel-head"><div className="panel-icon"><Icon name={activeNav === "Subscription" ? "subscription" : activeNav === "Applications" ? "applicants" : "vacancies"} size={22} /></div><div><span className="job-category">SCHOOL WORKSPACE</span><h2>{activeNav === "Subscription" ? "Connect your school to opportunity." : activeNav === "Applications" ? "Review applications." : "The right educator changes everything."}</h2><p>{activeNav === "Subscription" ? "Activate a subscription to keep your school’s opportunities visible to teachers." : activeNav === "Applications" ? "Review teachers who applied to your latest posted opportunity." : "Post a vacancy and help talented educators find their way to your school."}</p></div></div>
+            <div className="role-panel-head"><div className="panel-icon"><Icon name={activeNav === "Subscription" ? "subscription" : activeNav === "Applications" ? "applicants" : "vacancies"} size={22} /></div><div><span className="job-category">SCHOOL WORKSPACE</span><h2>{activeNav === "Subscription" ? "Connect your school to opportunity." : activeNav === "Applications" ? "Review applications." : "The right educator changes everything."}</h2><p>{activeNav === "Subscription" ? "Activate a subscription to keep your school’s opportunities visible to teachers." : activeNav === "Applications" ? "Review applicants for any of your active vacancies." : "Post a vacancy and help talented educators find their way to your school."}</p></div></div>
             {activeNav !== "Subscription" && <div className="institution-levels"><strong>{schoolLevel || "Institution type"}</strong><span>Teaching levels: {getVacancyLevelsForInstitutionType(schoolLevel).join(" · ") || "Not configured"}</span></div>}
-            {activeNav === "Subscription" ? subscriptionPlanOptions : <div className="role-actions"><button className="primary-button" onClick={() => activeNav === "My vacancies" && !institutionHasAccess ? setActiveNav("Subscription") : activeNav === "Applications" ? setActiveNav("My vacancies") : setModal("vacancy")}>{activeNav === "My vacancies" && !institutionHasAccess ? "Subscribe with M-Pesa" : activeNav === "Applications" ? "View vacancies" : "Post a vacancy"} <Icon name="arrow" size={15} /></button><button className="outline-button" onClick={() => setActiveNav("Subscription")}>Manage subscription</button></div>}
+            {activeNav === "Subscription" ? subscriptionPlanOptions : <div className="role-actions"><button className="primary-button" onClick={() => activeNav === "My vacancies" && !institutionCanPublish ? setActiveNav("Subscription") : activeNav === "Applications" ? setActiveNav("My vacancies") : setModal("vacancy")}>{activeNav === "My vacancies" && !institutionCanPublish ? "Subscribe with M-Pesa" : activeNav === "Applications" ? "View vacancies" : "Post a vacancy"} <Icon name="arrow" size={15} /></button><button className="outline-button" onClick={() => setActiveNav("Subscription")}>Manage subscription</button></div>}
             {activeNav === "Applications" && <div className="applicant-list">
-              <div className="applicant-list-heading"><div><span className="job-category">LATEST POSTED OPPORTUNITY</span><h3>{applicantVacancyTitle || "No posted opportunity"}</h3></div>{applicantVacancyTitle && <span className="status-badge">{institutionApplicants.length} {institutionApplicants.length === 1 ? "application" : "applications"}</span>}</div>
-              <p className="applicant-sort-note">Showing applications for this opportunity only, with the earliest applications first.</p>
+              {institutionActiveVacancies.length > 0 && <label className="applicant-vacancy-picker">Active vacancy<select value={selectedInstitutionVacancyId} onChange={(event) => { setSelectedInstitutionVacancyId(event.target.value); setExpandedApplicantId(""); }}>{institutionActiveVacancies.map((vacancy) => <option key={vacancy.id} value={vacancy.id}>{vacancy.title} · Apply by {formatNairobiDate(vacancy.applicationDeadline)}</option>)}</select></label>}
+              <div className="applicant-list-heading"><div><span className="job-category">ACTIVE OPPORTUNITY</span><h3>{selectedInstitutionVacancy?.title ?? "No active vacancies"}</h3></div>{selectedInstitutionVacancy && <span className="status-badge">{selectedInstitutionApplicants.length} {selectedInstitutionApplicants.length === 1 ? "application" : "applications"}</span>}</div>
+              {selectedInstitutionVacancy && <p className="applicant-sort-note">Showing applications for this vacancy, with the earliest applications first.</p>}
               {applicantsLoading && <p className="no-vacancies">Loading applications…</p>}
-              {!applicantsLoading && institutionApplicants.length === 0 && <p className="no-vacancies">{applicantVacancyTitle ? "No applications have arrived for this opportunity yet." : "Post an opportunity to start receiving applications."}</p>}
-              {institutionApplicants.map((applicant) => <article className="applicant-card" key={applicant.id}>
-                <div className="applicant-card-heading"><div><span className="job-category">{applicant.cv.professional_title || "TEACHER APPLICANT"}</span><h3>{applicant.cv.full_name}</h3><p>Applied {new Date(applicant.appliedAt).toLocaleString()}</p></div><button className="outline-button applicant-cv-button" aria-expanded={expandedApplicantId === applicant.id} onClick={() => setExpandedApplicantId((current) => current === applicant.id ? "" : applicant.id)}>{expandedApplicantId === applicant.id ? "Hide CV" : "View CV"}</button></div>
-                {expandedApplicantId === applicant.id && <>
-                  <div className="applicant-contact"><a href={`mailto:${applicant.cv.email}`}>{applicant.cv.email}</a>{applicant.cv.phone && <a href={`tel:${applicant.cv.phone}`}>{applicant.cv.phone}</a>}<span>{applicant.cv.years_experience} years of experience</span></div>
-                  <div className="applicant-cv-grid">
-                    <div><strong>Education & qualifications</strong><p>{applicant.cv.education || "Not provided"}</p></div>
-                    <div><strong>Teaching & work experience</strong><p>{applicant.cv.experience || "Not provided"}</p></div>
-                    <div><strong>Skills</strong><p>{applicant.cv.skills || "Not provided"}</p></div>
-                    <div><strong>Why they are the right candidate</strong><p>{applicant.cv.candidate_statement || "Not provided"}</p></div>
-                  </div>
-                </>}
-              </article>)}
+              {!applicantsLoading && institutionActiveVacancies.length === 0 && <p className="no-vacancies">Your institution has no active vacancies currently accepting applications. Post a vacancy to receive applicants.</p>}
+              {!applicantsLoading && selectedInstitutionVacancy && selectedInstitutionApplicants.length === 0 && <p className="no-vacancies">No applications have arrived for this vacancy yet.</p>}
+              {selectedInstitutionApplicants.length > 0 && <div className="applicant-table-wrap">
+                <table className="applicant-table">
+                  <thead><tr><th scope="col">Applicant</th><th scope="col">Contact</th><th scope="col">Experience</th><th scope="col">Applied</th><th scope="col"><span className="visually-hidden">CV details</span></th></tr></thead>
+                  <tbody>{selectedInstitutionApplicants.map((applicant) => <Fragment key={applicant.id}>
+                    <tr>
+                      <td><div className="applicant-table-name"><span>{applicant.cv.professional_title || "TEACHER APPLICANT"}</span><strong>{applicant.cv.full_name}</strong></div></td>
+                      <td><div className="applicant-table-contact"><a href={`mailto:${applicant.cv.email}`}>{applicant.cv.email}</a>{applicant.cv.phone && <a href={`tel:${applicant.cv.phone}`}>{applicant.cv.phone}</a>}</div></td>
+                      <td>{applicant.cv.years_experience} years</td>
+                      <td>{new Date(applicant.appliedAt).toLocaleString()}</td>
+                      <td><button className="outline-button applicant-cv-button" aria-expanded={expandedApplicantId === applicant.id} aria-controls={`applicant-cv-${applicant.id}`} onClick={() => setExpandedApplicantId((current) => current === applicant.id ? "" : applicant.id)}>{expandedApplicantId === applicant.id ? "Hide CV" : "View CV"}</button></td>
+                    </tr>
+                    {expandedApplicantId === applicant.id && <tr className="applicant-details-row" id={`applicant-cv-${applicant.id}`}><td colSpan={5}>
+                      <div className="applicant-cv-grid">
+                        <div><strong>Education & qualifications</strong><p>{applicant.cv.education || "Not provided"}</p></div>
+                        <div><strong>Teaching & work experience</strong><p>{applicant.cv.experience || "Not provided"}</p></div>
+                        <div><strong>Skills</strong><p>{applicant.cv.skills || "Not provided"}</p></div>
+                        <div><strong>Why they are the right candidate</strong><p>{applicant.cv.candidate_statement || "Not provided"}</p></div>
+                      </div>
+                    </td></tr>}
+                  </Fragment>)}</tbody>
+                </table>
+              </div>}
             </div>}
-            {activeNav === "My vacancies" && <div className="institution-vacancy-list"><h3>Your recent vacancies</h3>{vacancies.filter((job) => institutionId && job.institutionId === institutionId).map((job) => <div className="institution-vacancy" key={job.id}><span className="school-avatar mint">{job.initials}</span><span className="institution-vacancy-copy"><strong>{job.title}</strong><small>{job.level} · {job.subcounty ? `${job.subcounty}, ` : ""}{job.county} · Apply by {formatNairobiDate(job.applicationDeadline)}</small></span><span className={`status-badge ${isVacancyOpen(job.applicationDeadline) ? "status-open" : "status-closed"}`}>{isVacancyOpen(job.applicationDeadline) ? "Open" : "Closed"}</span></div>)}{vacancies.filter((job) => institutionId && job.institutionId === institutionId).length === 0 && <p className="no-vacancies">No vacancies yet. Post your first role to reach educators.</p>}</div>}
+            {activeNav === "My vacancies" && <div className="institution-vacancy-list">
+              <div className="institution-vacancy-heading"><h3>Your vacancies</h3><span>{institutionVacancies.length} {institutionVacancies.length === 1 ? "vacancy" : "vacancies"}</span></div>
+              {institutionVacancies.length > 0 ? <div className="applicant-table-wrap institution-vacancy-table-wrap">
+                <table className="applicant-table institution-vacancy-table">
+                  <thead><tr><th scope="col">Vacancy</th><th scope="col">Teaching level</th><th scope="col">Location</th><th scope="col">Apply by</th><th scope="col">Status</th></tr></thead>
+                  <tbody>{institutionVacancies.map((job) => <tr key={job.id}>
+                    <td><div className="institution-vacancy-name"><span className="school-avatar mint">{job.initials}</span><strong>{job.title}</strong></div></td>
+                    <td>{job.level}</td>
+                    <td>{job.subcounty ? `${job.subcounty}, ` : ""}{job.county}</td>
+                    <td>{formatNairobiDate(job.applicationDeadline)}</td>
+                    <td><span className={`status-badge ${isVacancyOpen(job.applicationDeadline) ? "status-open" : "status-closed"}`}>{isVacancyOpen(job.applicationDeadline) ? "Open" : "Closed"}</span></td>
+                  </tr>)}</tbody>
+                </table>
+              </div> : <p className="no-vacancies">No vacancies yet. Post your first role to reach educators.</p>}
+            </div>}
           </section>}
 
           {role === "admin" && <section className="panel-card role-panel">
@@ -1696,14 +1812,14 @@ export default function Home() {
             </section>}
           </section>}
 
-          <footer className="page-footer"><span>© 2025 MwalimuConnect</span><span>Built for the people who shape tomorrow. <span className="footer-spark">✳</span></span></footer>
+          <footer className="page-footer"><span>© {new Date().getFullYear()} MwalimuConnect</span><span>Built for the people who shape tomorrow. <span className="footer-spark">✳</span></span></footer>
         </div>
       </section>
 
-      <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.slice(0, 4).map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{item.split(" ")[0]}</span></button>)}</nav>
+      <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.slice(0, 4).map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.split(" ")[0]}</span></button>)}</nav>
 
       {modal && <div className="modal-backdrop" onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}>
-        <section className={`modal-card${modal === "institution" || modal === "edit-institution" ? " institution-modal-card" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+        <section className={`modal-card${modal === "institution" || modal === "edit-institution" ? " institution-modal-card" : modal === "vacancy" ? " vacancy-modal-card" : modal === "auth" ? ` auth-modal-card${authMode === "signup" && !loginChallenge ? " is-signup" : ""}` : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">
           {modal === "auth" ? authForm() : <>
             <button className="modal-close" onClick={() => setModal(null)} aria-label="Close" disabled={loading}><Icon name="close" size={19} /></button>
             <div className="modal-mark"><span className="brand-mark"><span /></span></div>
@@ -1756,7 +1872,7 @@ export default function Home() {
             </> : <>
               <span className="job-category">NEW OPPORTUNITY</span><h2 id="modal-heading">Find your next great educator.</h2><p className="modal-description">Your school’s location and learning level are applied automatically to its vacancies.</p>
               <div className="vacancy-school-details"><span><small>County</small><strong>{schoolCounty || "Loading…"}</strong></span><i /><span><small>Subcounty</small><strong>{schoolSubcounty || "Loading…"}</strong></span><i /><span><small>Institution type</small><strong>{schoolLevel || "Loading…"}</strong></span></div>
-              <form className="modal-form" onSubmit={(event) => void createVacancy(event)}><label>Job title<input name="title" placeholder="Enter teaching vacancy title" required /></label><label>Teaching level<select name="vacancy_level" defaultValue="" required><option value="" disabled>Select teaching level</option>{getVacancyLevelsForInstitutionType(schoolLevel).map((levelName) => <option key={levelName} value={levelName}>{levelName}</option>)}</select></label><div className="form-pair"><label>Employment arrangement<select name="employment_type"><option>Full-time</option><option>Part-time</option><option>Internship</option><option value="BOM">Employed by Board of Management (BOM)</option></select></label><label>Category<select name="category"><option>Teaching</option><option>Internship</option></select></label></div><label>Application closing date<input type="date" name="application_deadline" min={nairobiDateString()} defaultValue={nairobiDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))} required /></label><label>Role description<textarea name="description" rows={3} placeholder="What should applicants know?" /></label><button className="primary-button modal-submit" disabled={loading || !schoolCounty || !schoolSubcounty || !schoolLevel}>{loading ? "Publishing…" : "Publish vacancy"} <Icon name="arrow" size={15} /></button></form>
+              <form className="modal-form vacancy-form" onSubmit={(event) => void createVacancy(event)}><label>Job title<input name="title" placeholder="Enter teaching vacancy title" required /></label><label>Teaching level<select name="vacancy_level" defaultValue="" required><option value="" disabled>Select teaching level</option>{getVacancyLevelsForInstitutionType(schoolLevel).map((levelName) => <option key={levelName} value={levelName}>{levelName}</option>)}</select></label><div className="form-pair"><label>Employment arrangement<select name="employment_type"><option>Full-time</option><option>Part-time</option><option>Internship</option><option value="BOM">Employed by Board of Management (BOM)</option></select></label><label>Category<select name="category"><option>Teaching</option><option>Internship</option></select></label></div><label>Application closing date<input type="date" name="application_deadline" min={nairobiDateString()} defaultValue={nairobiDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))} required /></label><label className="vacancy-description-field">Role description<textarea name="description" rows={4} placeholder="What should applicants know?" /></label><button className="primary-button modal-submit" disabled={loading || !schoolCounty || !schoolSubcounty || !schoolLevel}>{loading ? "Publishing…" : "Publish vacancy"} <Icon name="arrow" size={15} /></button></form>
             </>}
           </>}
         </section>

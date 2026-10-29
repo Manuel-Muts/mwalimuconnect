@@ -22,6 +22,17 @@ export default function LandingPage({
         <a className="landing-brand" href="#home" aria-label="MwalimuConnect home">
           <span className="landing-brand-mark"><span /></span>
           <span>mwalimu<span className="landing-brand-light">connect</span></span>
+          <svg className="landing-connect-animation" viewBox="0 0 48 24" aria-hidden="true">
+            <circle className="landing-socket" cx="12" cy="12" r="8" />
+            <circle className="landing-socket-slots" cx="10" cy="9" r="1" />
+            <circle className="landing-socket-slots" cx="14" cy="15" r="1" />
+            <g className="landing-plug">
+              <path className="landing-plug-prongs" d="M25 9h-5m5 6h-5" />
+              <rect className="landing-plug-body" x="25" y="6" width="10" height="12" rx="4" />
+              <path className="landing-plug-cord" d="M35 12h2c2 0 3 1 3 3v2" />
+            </g>
+            <circle className="landing-connect-spark" cx="19" cy="12" r="1.5" />
+          </svg>
         </a>
         <nav className="landing-links" aria-label="Main">
           <a href="#opportunities">Opportunities</a>
@@ -134,6 +145,36 @@ export default function LandingPage({
         <button className="school-cta-button" onClick={onSchools}>Find talent for your school <span aria-hidden="true">↗</span></button>
       </section>
 
+      <section className="landing-contact" id="contact" aria-labelledby="landing-contact-title">
+        <div className="landing-contact-orbit" aria-hidden="true" />
+        <div className="landing-contact-inner">
+          <div className="landing-contact-copy">
+            <span className="landing-contact-kicker">HERE WHEN YOU NEED US</span>
+            <h2 id="landing-contact-title">Let&apos;s make a<br /><em>connection.</em></h2>
+            <p>Questions, feedback, or need a hand? We&apos;d love to hear from you.</p>
+          </div>
+          <div className="landing-contact-options">
+            <a className="landing-contact-card" href="tel:0769190048">
+              <span className="landing-contact-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M7.2 3.8h2.5l1.2 4.1-1.8 1.7a15 15 0 0 0 5.3 5.3l1.7-1.8 4.1 1.2v2.5c0 1.1-.9 2-2 2C10 18.8 5.2 14 5.2 5.8c0-1.1.9-2 2-2Z" />
+                </svg>
+              </span>
+              <span className="landing-contact-detail"><small>TEXT OR CALL</small><strong>0769 190 048</strong><span>We&apos;re happy to help <i aria-hidden="true">↗</i></span></span>
+            </a>
+            <a className="landing-contact-card" href="mailto:info@competencehub.co.ke">
+              <span className="landing-contact-icon landing-contact-icon-email" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+                  <path d="m5 7 7 5.5L19 7" />
+                </svg>
+              </span>
+              <span className="landing-contact-detail"><small>DROP US AN EMAIL</small><strong>info@competencehub.co.ke</strong><span>We&apos;ll get back to you <i aria-hidden="true">↗</i></span></span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       <footer className="landing-footer">
         <a className="landing-brand" href="#home" aria-label="MwalimuConnect home">
           <span className="landing-brand-mark"><span /></span>
@@ -141,8 +182,14 @@ export default function LandingPage({
         </a>
         <p>For the people who shape tomorrow.</p>
         <div><a href="#opportunities">Opportunities</a><a href="#how-it-works">How it works</a><button onClick={onSignIn}>Your account</button></div>
-        <span className="landing-copyright">© 2026 MwalimuConnect</span>
+        <span className="landing-copyright">© {new Date().getFullYear()} MwalimuConnect</span>
       </footer>
+      <a className="landing-whatsapp-link" href="https://wa.me/254717747895" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 3.1A12.6 12.6 0 0 0 5.2 22.2L3.5 28.5l6.5-1.7A12.6 12.6 0 1 0 16 3.1Z" />
+          <path d="M12.1 9.2c-.3-.7-.6-.7-.9-.7h-.8c-.3 0-.7.1-1 .5-.3.4-1.3 1.3-1.3 3.1s1.3 3.6 1.5 3.8c.2.3 2.5 4 6.2 5.4 3.1 1.2 3.7 1 4.4.9.7-.1 2.3-.9 2.6-1.8.3-.9.3-1.6.2-1.8-.1-.2-.3-.3-.7-.5l-2.5-1.2c-.3-.1-.6-.2-.8.2-.2.3-.9 1.2-1.1 1.5-.2.2-.4.3-.8.1-.4-.2-1.7-.6-3.2-2-.9-.8-1.5-1.8-1.7-2.2-.2-.4 0-.6.2-.8l.6-.7c.2-.2.3-.4.4-.6.1-.2 0-.5 0-.7l-1.3-2.6Z" />
+        </svg>
+      </a>
     </main>
   );
 }
