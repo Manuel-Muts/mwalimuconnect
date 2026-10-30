@@ -238,6 +238,20 @@ export default function Home() {
   const [landingMessage, setLandingMessage] = useState("");
 
   useEffect(() => {
+    if (!selectedVacancy) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedVacancy(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [selectedVacancy]);
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => setNairobiDateTick((tick) => tick + 1), 60_000);
     return () => window.clearInterval(intervalId);
   }, []);
@@ -1116,13 +1130,11 @@ export default function Home() {
       return;
     }
     if (!cvSaved) {
-      setSelectedVacancy(job);
       setActiveNav("My CV");
       setNotice("Complete and save your CV before applying. It will be shared with the school receiving your application.");
       return;
     }
     if (!teacherCv.candidate_statement.trim()) {
-      setSelectedVacancy(job);
       setActiveNav("My CV");
       setNotice("Add and save your candidate statement before applying. Explain why you are a good fit for the role.");
       return;
@@ -1681,23 +1693,18 @@ export default function Home() {
                 <tbody>
                   {visibleVacancies.map((job) => (
                     <tr key={job.id}>
-                      <td><button className="opportunity-title" aria-expanded={selectedVacancy?.id === job.id} onClick={() => setSelectedVacancy((current) => current?.id === job.id ? null : job)}>{job.title}</button><span className="opportunity-category">{job.category} · {job.type}</span></td>
+                      <td><button className="opportunity-title" aria-haspopup="dialog" onClick={() => setSelectedVacancy(job)}>{job.title}</button><span className="opportunity-category">{job.category} · {job.type}</span></td>
                       <td>{job.institution}</td>
                       <td>{job.subcounty ? `${job.subcounty}, ` : ""}{job.county}</td>
                       <td>{job.level}</td>
                       <td><span className="posted-date-badge">{new Date(job.postedAt).toLocaleDateString()}{wasPostedWithinLastWeek(job.postedAt) && <span className="new-opportunity-badge">NEW</span>}</span></td>
                       <td><span className={`status-badge ${isVacancyOpen(job.applicationDeadline) ? "status-open" : "status-closed"}`}>{isVacancyOpen(job.applicationDeadline) ? "Open" : "Closed"}</span></td>
-                      <td className="opportunity-actions"><button className={`bookmark-button ${saved.includes(job.id) ? "is-saved" : ""}`} aria-label={saved.includes(job.id) ? `Remove ${job.title} from saved opportunities` : `Save ${job.title}`} aria-pressed={saved.includes(job.id)} onClick={() => setSaved((current) => current.includes(job.id) ? current.filter((id) => id !== job.id) : [...current, job.id])}><Icon name="saved" size={16} /></button><button className="details-link" aria-label={`View details for ${job.title}`} aria-expanded={selectedVacancy?.id === job.id} onClick={() => setSelectedVacancy((current) => current?.id === job.id ? null : job)}>{selectedVacancy?.id === job.id ? "Close" : "Details"}</button></td>
+                      <td className="opportunity-actions"><button className={`bookmark-button ${saved.includes(job.id) ? "is-saved" : ""}`} aria-label={saved.includes(job.id) ? `Remove ${job.title} from saved opportunities` : `Save ${job.title}`} aria-pressed={saved.includes(job.id)} onClick={() => setSaved((current) => current.includes(job.id) ? current.filter((id) => id !== job.id) : [...current, job.id])}><Icon name="saved" size={16} /></button><button className="details-link" aria-label={`View details for ${job.title}`} aria-haspopup="dialog" onClick={() => setSelectedVacancy(job)}>Details</button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-              {selectedVacancy && visibleVacancies.some((job) => job.id === selectedVacancy.id) && <section className="opportunity-details" id="opportunity-details" aria-labelledby="selected-opportunity-title">
-                <div className="opportunity-details-heading"><div><span className="job-category">OPPORTUNITY DETAILS</span><h3 id="selected-opportunity-title">{selectedVacancy.title}</h3><p>{selectedVacancy.institution} · {selectedVacancy.subcounty ? `${selectedVacancy.subcounty}, ` : ""}{selectedVacancy.county}</p></div><span className={`status-badge ${isVacancyOpen(selectedVacancy.applicationDeadline) ? "status-open" : "status-closed"}`}>{isVacancyOpen(selectedVacancy.applicationDeadline) ? "Open" : "Closed"}</span></div>
-                <p className="opportunity-description">{selectedVacancy.description.trim() || "The school has not added a role description yet."}</p>
-                <div className="opportunity-details-footer"><span>{selectedVacancy.level} · {selectedVacancy.type} · Apply by {formatNairobiDate(selectedVacancy.applicationDeadline)}</span><button className={`apply-button ${applied.includes(selectedVacancy.id) ? "applied" : ""}`} disabled={applied.includes(selectedVacancy.id) || !isVacancyOpen(selectedVacancy.applicationDeadline)} onClick={() => void applyFor(selectedVacancy)}>{applied.includes(selectedVacancy.id) ? "Applied" : isVacancyOpen(selectedVacancy.applicationDeadline) ? "Apply now" : "Closed"} {isVacancyOpen(selectedVacancy.applicationDeadline) && !applied.includes(selectedVacancy.id) && <Icon name="arrow" size={15} />}</button></div>
-              </section>}
               {visibleVacancies.length === 0 && <div className="empty-state"><span>✳</span><strong>{emptyVacancyTitle}</strong><p>{emptyVacancyDescription}</p>{activeNav !== "Discover" && <button className="text-button" onClick={() => setActiveNav("Discover")}>Explore opportunities <Icon name="arrow" size={15} /></button>}</div>}
           </section>}
 
@@ -1817,6 +1824,35 @@ export default function Home() {
       </section>
 
     </main>
+
+      {selectedVacancy && <div className="vacancy-details-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedVacancy(null); }}>
+        <section className="vacancy-details-modal" role="dialog" aria-modal="true" aria-labelledby="selected-opportunity-title">
+          <button className="vacancy-details-close" autoFocus onClick={() => setSelectedVacancy(null)} aria-label="Close opportunity details"><Icon name="close" size={19} /></button>
+          <header className="vacancy-details-header">
+            <span className="job-category">{selectedVacancy.category} opportunity</span>
+            <span className={`status-badge ${isVacancyOpen(selectedVacancy.applicationDeadline) ? "status-open" : "status-closed"}`}>{isVacancyOpen(selectedVacancy.applicationDeadline) ? "Open" : "Closed"}</span>
+            <h2 id="selected-opportunity-title">{selectedVacancy.title}</h2>
+            <p>{selectedVacancy.institution}</p>
+          </header>
+          <dl className="vacancy-details-meta">
+            <div><dt>Location</dt><dd>{selectedVacancy.subcounty ? `${selectedVacancy.subcounty}, ` : ""}{selectedVacancy.county}</dd></div>
+            <div><dt>Teaching level</dt><dd>{selectedVacancy.level}</dd></div>
+            <div><dt>Employment</dt><dd>{selectedVacancy.type}</dd></div>
+            <div><dt>Apply by</dt><dd>{formatNairobiDate(selectedVacancy.applicationDeadline)}</dd></div>
+          </dl>
+          <div className="vacancy-details-description">
+            <h3>Role description</h3>
+            <p>{selectedVacancy.description.trim() || "The school has not added a role description yet."}</p>
+          </div>
+          <footer className="vacancy-details-footer">
+            <span>{applied.includes(selectedVacancy.id) ? "You have applied for this opportunity." : "Review the role details before applying."}</span>
+            <button className={`apply-button ${applied.includes(selectedVacancy.id) ? "applied" : ""}`} disabled={applied.includes(selectedVacancy.id) || !isVacancyOpen(selectedVacancy.applicationDeadline)} onClick={() => { const job = selectedVacancy; setSelectedVacancy(null); void applyFor(job); }}>
+              {applied.includes(selectedVacancy.id) ? "Applied" : isVacancyOpen(selectedVacancy.applicationDeadline) ? "Apply now" : "Closed"}
+              {isVacancyOpen(selectedVacancy.applicationDeadline) && !applied.includes(selectedVacancy.id) && <Icon name="arrow" size={15} />}
+            </button>
+          </footer>
+        </section>
+      </div>}
 
       <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.replace(/^My\s+/, "").replace(/^\w/, (letter) => letter.toUpperCase())}</span></button>)}</nav>
 

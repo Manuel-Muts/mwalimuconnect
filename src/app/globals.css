@@ -54,44 +54,35 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .landing-signup, .landing-primary { display: inline-flex; min-height: 42px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 17px; padding: 0 17px; color: #fff; border: 1px solid #1c6848; border-radius: 6px; background: #1c6848; font-size: 11px; font-weight: 600; transition: background .18s, transform .18s; white-space: nowrap; }
 .landing-signup:hover, .landing-primary:hover { background: #124e38; transform: translateY(-1px); }
 .landing-signup span, .landing-primary span { font-size: 16px; }
-.landing-hero { position: relative; display: grid; width: min(100% - 104px, 1232px); min-height: 520px; grid-template-columns: .91fr 1.09fr; align-items: center; gap: 29px; margin: 0 auto; padding: 44px 0 42px; }
-.landing-hero-copy { position: relative; z-index: 1; padding: 0 0 11px 20px; }
+.landing-hero { position: relative; display: flex; width: 100%; min-height: 620px; align-items: center; margin: 0; padding: 54px max(calc((100vw - 1232px) / 2), 52px); overflow: hidden; background: #173c2b; }
+.landing-hero-copy { position: relative; z-index: 2; width: min(100%, 620px); padding: 0 0 11px; }
 .landing-eyebrow, .landing-section-label { display: flex; align-items: center; gap: 9px; color: #64816d; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; }
+.landing-eyebrow { color: #f0dfc0; }
 .landing-eyebrow { margin-bottom: 20px; }
 .landing-eyebrow span { width: 7px; height: 7px; border-radius: 50%; background: #d78c59; box-shadow: 0 0 0 4px #f4e8d9; }
-.landing-hero h1 { margin: 0; color: #17392a; font-family: Manrope, sans-serif; font-size: clamp(42px, 5.1vw, 68px); font-weight: 600; letter-spacing: -3.8px; line-height: 1.075; }
+.landing-hero h1 { margin: 0; color: #fffdf4; font-family: Manrope, sans-serif; font-size: clamp(42px, 5.1vw, 68px); font-weight: 600; letter-spacing: -3.8px; line-height: 1.075; }
 .landing-hero h1 span, .landing-section-heading h2 em, .landing-how-heading h2 em, .school-cta-copy h2 em { color: #8c6745; font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
-.landing-intro { max-width: 430px; margin: 20px 0 24px; color: #758077; font-size: 13px; line-height: 1.85; }
+.landing-hero h1 span { color: #e7c89d; }
+.landing-intro { max-width: 430px; margin: 20px 0 24px; color: #f0f3ed; font-size: 13px; line-height: 1.85; }
 .landing-hero-actions { display: flex; align-items: center; gap: 11px; }
 .landing-primary { min-height: 46px; gap: 27px; padding: 0 18px; font-size: 11px; }
-.landing-secondary { display: inline-flex; min-height: 46px; align-items: center; gap: 9px; padding: 0 14px; color: #465e4f; border: 1px solid #e1e4dc; border-radius: 6px; background: transparent; font-size: 11px; font-weight: 600; transition: background .16s, border-color .16s; }
+.landing-secondary { display: inline-flex; min-height: 46px; align-items: center; gap: 9px; padding: 0 14px; color: #fff; border: 1px solid #ffffff80; border-radius: 6px; background: #173c2b66; font-size: 11px; font-weight: 600; transition: background .16s, border-color .16s; }
 .landing-secondary:hover { border-color: #c6d6c6; background: #f3f5ec; }
 .school-cta-icon { color: #49805e; font-size: 19px; }
-.landing-social-proof { display: flex; align-items: center; gap: 12px; margin-top: 31px; color: #858c82; font-size: 9px; line-height: 1.6; }
-.landing-social-proof strong { color: #465b4c; font-weight: 700; }
+.landing-social-proof { display: flex; align-items: center; gap: 12px; margin-top: 31px; color: #e1e9df; font-size: 9px; line-height: 1.6; }
+.landing-social-proof strong { color: #fff; font-weight: 700; }
 .proof-avatars { display: flex; align-items: center; padding-left: 4px; }
 .proof-avatars i { display: grid; width: 27px; height: 27px; margin-left: -4px; place-items: center; color: #345941; border: 2px solid var(--landing-paper); border-radius: 50%; background: #dce8d9; font-size: 7px; font-style: normal; font-weight: 700; }
 .proof-avatars i:nth-child(2) { color: #855e43; background: #eedac6; }
 .proof-avatars i:nth-child(3) { color: #695b83; background: #e4dff0; }
 .proof-avatars i:nth-child(4) { color: #6a796d; background: #e9ebe3; }
-.landing-visual { position: relative; display: grid; min-height: 440px; place-items: center; }
-.landing-visual::before { position: absolute; inset: 20px 5px 16px 3px; border-radius: 48% 47% 9% 9% / 52% 48% 12% 12%; background: #e8eee1; content: ""; transform: rotate(2deg); }
-.landing-visual::after { position: absolute; right: 12%; bottom: 8%; left: 12%; height: 6%; border-radius: 50%; background: #d2d7c6; content: ""; filter: blur(1px); }
-.visual-orbit { position: absolute; z-index: 0; border: 1px solid rgba(112,139,112,.24); border-radius: 50%; }
-.orbit-outer { top: 1%; right: 2%; width: 77%; height: 84%; transform: rotate(-14deg); }
-.orbit-inner { top: 10%; right: 8%; width: 66%; height: 73%; border-style: dashed; opacity: .7; transform: rotate(15deg); }
-.classroom-art { position: relative; z-index: 1; width: min(100%, 550px); height: auto; margin: 0 0 6px; }
-.visual-tag { position: absolute; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid #ebe8dd; border-radius: 8px; background: #fffefa; box-shadow: 0 12px 32px #26372815; }
-.visual-tag strong, .visual-tag small { display: block; white-space: nowrap; }
-.visual-tag strong { color: #345342; font-size: 9px; }
-.visual-tag small { margin-top: 4px; color: #92978d; font-size: 8px; }
-.tag-opportunity { top: 19%; right: -1%; }
-.tag-school { bottom: 12%; left: 1%; }
-.tag-icon, .tag-school-mark { display: grid; width: 31px; height: 31px; flex: 0 0 auto; place-items: center; border-radius: 7px; background: #eff3e9; color: #387753; font-size: 16px; }
-.tag-school-mark { color: #835f40; background: #f5ebdc; font-size: 13px; }
-.visual-spark { position: absolute; z-index: 2; color: #d48e5e; }
-.spark-one { top: 16%; left: 9%; font-size: 30px; }
-.spark-two { right: 9%; bottom: 17%; color: #709274; font-size: 20px; }
+.landing-visual { position: absolute; z-index: 0; inset: 0; min-height: 0; overflow: hidden; background: #173c2b; }
+.landing-carousel { position: absolute; z-index: 0; inset: 0; overflow: hidden; isolation: isolate; background: #173c2b; }
+.landing-carousel-slide { position: absolute; inset: 0; overflow: hidden; opacity: 0; transition: opacity .9s ease; }
+.landing-carousel-slide.is-active { z-index: 1; opacity: 1; }
+.landing-carousel-slide > img { object-fit: cover; transform: scale(1.035); transition: transform 7s ease; }
+.landing-carousel-slide.is-active > img { transform: scale(1); }
+.landing-carousel-slide::after { position: absolute; inset: 0; background: linear-gradient(90deg, #10251de8 0%, #10251db8 38%, #10251d42 100%); content: ""; }
 .landing-notice { position: fixed; top: 13px; left: 50%; z-index: 12; width: min(calc(100% - 30px), 580px); padding: 13px 18px; color: #345941; border: 1px solid #dcebdd; border-radius: 8px; background: #f3f8f0; box-shadow: 0 8px 30px #152b1d1a; font-size: 12px; line-height: 1.5; transform: translateX(-50%); }
 .landing-pathways { display: flex; width: min(100% - 104px, 1232px); min-height: 115px; align-items: center; justify-content: space-between; gap: 24px; margin: 0 auto; padding: 21px 20px; border-top: 1px solid #eae9df; border-bottom: 1px solid #eae9df; }
 .pathways-intro { flex: 0 0 auto; }
@@ -138,16 +129,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .landing-steps article:nth-child(3) .step-icon { color: #667858; background: #e5e8d8; }
 .landing-steps h3 { margin: 0 0 8px; color: #314938; font-family: Manrope, sans-serif; font-size: 12px; font-weight: 700; }
 .landing-steps p { max-width: 185px; margin: 0; color: #788276; font-size: 9px; line-height: 1.75; }
-.landing-school-cta { position: relative; display: flex; width: min(100% - 104px, 1140px); min-height: 238px; align-items: center; justify-content: space-between; gap: 24px; overflow: hidden; margin: 85px auto 75px; padding: 36px 49px; border-radius: 9px; background: #1d513a; }
-.school-cta-copy { position: relative; z-index: 1; }
+.landing-school-cta { position: relative; display: flex; width: 100%; min-height: 380px; align-items: center; overflow: hidden; margin: 85px 0 75px; padding: 48px max(calc((100vw - 1232px) / 2), 52px); background: #1d513a; }
+.school-cta-copy { position: relative; z-index: 2; display: flex; width: min(100%, 620px); flex-direction: column; align-items: flex-start; justify-content: center; padding: 20px 0; }
 .school-cta-copy .landing-section-label { color: #b7c8ad; }
-.school-cta-copy h2 { margin: 13px 0 9px; color: #fffdf4; font-family: Manrope, sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1.2; }
+.school-cta-copy h2 { margin: 13px 0 20px; color: #fffdf4; font-family: Manrope, sans-serif; font-size: clamp(24px, 3vw, 36px); font-weight: 600; letter-spacing: -1px; line-height: 1.2; }
 .school-cta-copy h2 em { color: #e7c89d; }
-.school-cta-copy p { margin: 0; color: #d0ded1; font-size: 10px; }
 .school-cta-button { position: relative; z-index: 1; display: inline-flex; min-height: 44px; flex: 0 0 auto; align-items: center; gap: 19px; padding: 0 17px; color: #2a503a; border: 0; border-radius: 5px; background: #f2ecd9; font-size: 10px; font-weight: 700; transition: background .16s, transform .16s; }
 .school-cta-button:hover { background: #fff; transform: translateY(-2px); }
 .school-cta-button span { font-size: 15px; }
-.school-cta-decoration { position: absolute; inset: 0; overflow: hidden; color: #d6cb9a; pointer-events: none; }
+.school-cta-image { position: absolute; z-index: 0; inset: 0; }
+.school-cta-image img { object-fit: cover; }
+.school-cta-image::after { position: absolute; inset: 0; background: linear-gradient(90deg, #10251dc9 0%, #10251d87 48%, #10251d38 100%), linear-gradient(0deg, #10251d50, transparent 70%); content: ""; }
+.school-cta-decoration { position: absolute; inset: 0; z-index: 1; overflow: hidden; color: #d6cb9a; pointer-events: none; }
 .school-cta-decoration::before, .school-cta-decoration::after { position: absolute; top: -225px; right: 12%; width: 500px; height: 500px; border: 1px solid #ffffff19; border-radius: 50%; content: ""; }
 .school-cta-decoration::after { top: -179px; right: 16%; width: 410px; height: 410px; }
 .school-cta-decoration span { position: absolute; font-size: 28px; }
@@ -362,12 +355,24 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .new-opportunity-badge { padding: 3px 6px; color: #28784e; border-radius: 999px; background: #eaf4eb; font-size: 8px; font-weight: 700; letter-spacing: .3px; }
 .opportunity-actions { display: flex; align-items: center; gap: 7px; }
 .details-link { padding: 4px 0; color: #397550; border: 0; background: none; font-size: 9px; font-weight: 700; }
-.opportunity-details { margin-top: 10px; padding: 18px; border: 1px solid #e3ebe3; border-radius: 9px; background: #fff; }
-.opportunity-details-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.opportunity-details-heading h3 { margin: 5px 0; color: #263a2f; font-family: Manrope, sans-serif; font-size: 15px; }
-.opportunity-details-heading p { margin: 0; color: #87918a; font-size: 9px; }
-.opportunity-description { margin: 16px 0; color: #657269; font-size: 10px; line-height: 1.7; white-space: pre-wrap; }
-.opportunity-details-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid #edf0ed; color: #78857c; font-size: 9px; }
+.vacancy-details-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; overflow-y: auto; place-items: center; padding: 24px; background: #10251dcc; backdrop-filter: blur(4px); }
+.vacancy-details-modal { position: relative; width: min(100%, 720px); max-height: min(840px, calc(100vh - 48px)); overflow-y: auto; overscroll-behavior: contain; padding: 36px 40px 30px; border: 1px solid #e3ebe3; border-radius: 16px; background: #fff; box-shadow: 0 24px 80px #10251d40; }
+.vacancy-details-close { position: absolute; top: 16px; right: 16px; display: grid; width: 36px; height: 36px; place-items: center; color: #718078; border: 1px solid #e8eee8; border-radius: 9px; background: #f7faf7; }
+.vacancy-details-close:hover { color: #176f49; background: #edf5ef; }
+.vacancy-details-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 16px; padding-right: 36px; }
+.vacancy-details-header .job-category { grid-column: 1; }
+.vacancy-details-header .status-badge { grid-column: 2; grid-row: 1; }
+.vacancy-details-header h2 { grid-column: 1 / -1; margin: 4px 0 0; color: #263a2f; font-family: Manrope, sans-serif; font-size: clamp(22px, 3vw, 30px); letter-spacing: -.8px; line-height: 1.2; overflow-wrap: anywhere; }
+.vacancy-details-header p { grid-column: 1 / -1; margin: 0; color: #748178; font-size: 14px; }
+.vacancy-details-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 26px 0; padding: 16px; border: 1px solid #e8eee8; border-radius: 10px; background: #f8faf8; }
+.vacancy-details-meta > div { min-width: 0; }
+.vacancy-details-meta dt { margin-bottom: 6px; color: #8a948e; font-size: 9px; font-weight: 700; letter-spacing: .55px; text-transform: uppercase; }
+.vacancy-details-meta dd { margin: 0; color: #35473b; font-size: 12px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.vacancy-details-description { padding-bottom: 24px; }
+.vacancy-details-description h3 { margin: 0 0 10px; color: #344a3a; font-family: Manrope, sans-serif; font-size: 15px; }
+.vacancy-details-description p { margin: 0; color: #657269; font-size: 13px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.vacancy-details-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 18px; border-top: 1px solid #edf0ed; color: #78857c; font-size: 11px; }
+.vacancy-details-footer .apply-button { min-height: 40px; padding: 0 16px; font-size: 12px; }
 .school-avatar { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 11px; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 800; }
 .school-avatar.mint { color: #3d7755; background: #e9f2e9; }
 .school-avatar.lilac { color: #73699a; background: #f0edf8; }
@@ -539,20 +544,19 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 }
 @media (min-width: 1450px) {
   .landing-hero { min-height: 570px; }
-  .landing-visual { min-height: 485px; }
 }
 @media (max-width: 1050px) {
   .auth-modal-card.is-signup { width: min(100%, 560px); padding: 28px; }
-  .landing-header, .landing-hero, .landing-pathways, .landing-footer { width: calc(100% - 64px); }
-  .landing-hero { grid-template-columns: .95fr 1.05fr; gap: 10px; }
-  .landing-hero-copy { padding-left: 7px; }
+  .landing-header, .landing-pathways, .landing-footer { width: calc(100% - 64px); }
+  .landing-hero { width: 100%; padding-right: 48px; padding-left: 48px; }
+  .landing-hero-copy { padding-left: 0; }
   .landing-hero h1 { font-size: clamp(42px, 5.5vw, 60px); }
-  .landing-visual { min-height: 390px; }
+  .landing-visual { min-height: 0; }
   .visual-tag { padding: 9px 10px; }
   .tag-opportunity { right: -2%; }
   .landing-pathways { align-items: flex-start; flex-direction: column; gap: 15px; }
   .pathway-chips { justify-content: flex-start; }
-  .landing-opportunities, .landing-school-cta { width: calc(100% - 96px); }
+  .landing-opportunities { width: calc(100% - 96px); }
   .landing-how { grid-template-columns: 1fr; gap: 34px; padding-right: 48px; padding-left: 48px; }
   .landing-contact { padding-right: 48px; padding-left: 48px; }
   .landing-contact-inner { grid-template-columns: 1fr; gap: 25px; }
@@ -570,24 +574,14 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .landing-login { font-size: 10px; }
   .landing-signup { min-height: 34px; gap: 5px; padding: 0 8px; font-size: 8px; }
   .landing-signup span { font-size: 12px; }
-  .landing-hero { width: calc(100% - 36px); grid-template-columns: 1fr; gap: 1px; padding: 41px 0 21px; }
+  .landing-hero { width: 100%; min-height: 680px; padding: 42px 24px; }
   .landing-hero-copy { padding: 0 3px; }
   .landing-eyebrow { margin-bottom: 16px; font-size: 8px; }
   .landing-hero h1 { font-size: clamp(43px, 11vw, 58px); letter-spacing: -2.6px; }
   .landing-intro { max-width: 420px; margin: 16px 0 20px; font-size: 12px; line-height: 1.75; }
   .landing-primary, .landing-secondary { min-height: 43px; }
   .landing-social-proof { margin-top: 21px; }
-  .landing-visual { min-height: 300px; margin: 7px 0 -7px; }
-  .landing-visual::before { inset: 12px 8px 14px; }
-  .classroom-art { width: min(100%, 390px); }
-  .visual-tag { gap: 7px; padding: 8px; border-radius: 7px; }
-  .visual-tag strong { font-size: 8px; }
-  .visual-tag small { font-size: 7px; }
-  .tag-icon, .tag-school-mark { width: 25px; height: 25px; }
-  .tag-opportunity { top: 14%; right: -1%; }
-  .tag-school { bottom: 8%; left: 0; }
-  .spark-one { top: 14%; left: 4%; font-size: 23px; }
-  .spark-two { right: 7%; bottom: 11%; font-size: 17px; }
+  .landing-visual { min-height: 0; margin: 0; }
   .landing-pathways { width: calc(100% - 36px); min-height: unset; gap: 13px; padding: 19px 3px; }
   .pathway-chips { gap: 6px; }
   .pathway-chips span { padding: 8px 10px; font-size: 8px; }
@@ -608,9 +602,9 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .step-icon { grid-column: 1; grid-row: 2 / span 2; margin: 8px 0 0; }
   .landing-steps h3 { grid-column: 2; grid-row: 1; margin: 0 0 5px; }
   .landing-steps p { grid-column: 2; grid-row: 2; max-width: 300px; }
-  .landing-school-cta { width: calc(100% - 36px); min-height: unset; align-items: flex-start; flex-direction: column; gap: 19px; margin: 54px auto 46px; padding: 27px 22px; }
-  .school-cta-copy h2 { font-size: 24px; }
-  .school-cta-copy p { max-width: 300px; font-size: 9px; line-height: 1.65; }
+  .landing-school-cta { width: 100%; min-height: 400px; margin: 54px 0 46px; padding: 34px 24px; }
+  .school-cta-copy { padding: 15px 8px 5px; }
+  .school-cta-copy h2 { margin: 12px 0 16px; font-size: 24px; }
   .school-cta-button { min-height: 40px; font-size: 9px; }
   .school-cta-decoration::before { right: -68%; }
   .school-cta-decoration::after { right: -50%; }
@@ -637,6 +631,10 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .landing-login { font-size: 9px; }
   .landing-header-actions { gap: 6px; }
   .landing-signup { gap: 3px; padding: 0 6px; font-size: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-carousel-slide, .landing-carousel-slide > img { transition: none; }
+  .landing-carousel-slide > img, .landing-carousel-slide.is-active > img { transform: none; }
 }
 
 @media (max-width: 1100px) {
@@ -742,8 +740,18 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .opportunity-table { min-width: 720px; }
   .bookmark-button { width: 29px; height: 29px; }
   .apply-button { min-width: 80px; height: 29px; gap: 5px; font-size: 8px; }
-  .opportunity-details { padding: 14px; }
-  .opportunity-details-footer { align-items: flex-start; flex-direction: column; }
+  .vacancy-details-backdrop { padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); }
+  .vacancy-details-modal { width: 100%; max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 28px 20px 20px; border-radius: 14px; }
+  .vacancy-details-close { top: 12px; right: 12px; width: 33px; height: 33px; }
+  .vacancy-details-header { gap: 9px 10px; padding-right: 30px; }
+  .vacancy-details-header h2 { font-size: 22px; }
+  .vacancy-details-header p { font-size: 12px; }
+  .vacancy-details-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; margin: 20px 0; padding: 14px; }
+  .vacancy-details-meta dd { font-size: 11px; }
+  .vacancy-details-description { padding-bottom: 19px; }
+  .vacancy-details-description p { font-size: 12px; }
+  .vacancy-details-footer { align-items: stretch; flex-direction: column; gap: 12px; font-size: 10px; }
+  .vacancy-details-footer .apply-button { width: 100%; }
   .page-footer { align-items: flex-start; font-size: 8px; }
   .page-footer > span:last-child { max-width: 170px; text-align: right; }
   .panel-card { padding: 20px 17px; }
