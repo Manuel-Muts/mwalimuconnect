@@ -204,10 +204,13 @@ export default function Home() {
   const [deletingInstitution, setDeletingInstitution] = useState<RegisteredInstitution | null>(null);
   const [editInstitutionSubcounty, setEditInstitutionSubcounty] = useState("");
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
+  const [authMode, setAuthMode] = useState<"signup" | "signin" | "forgot-password">("signup");
   const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [showInvitationPassword, setShowInvitationPassword] = useState(false);
   const [showInvitationPasswordConfirmation, setShowInvitationPasswordConfirmation] = useState(false);
+  const [passwordRecoveryRequired, setPasswordRecoveryRequired] = useState(false);
+  const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [showRecoveryPasswordConfirmation, setShowRecoveryPasswordConfirmation] = useState(false);
   const [loginChallenge, setLoginChallenge] = useState<{ id: string; email: string } | null>(null);
   const [loginOtp, setLoginOtp] = useState("");
   const loginOtpInputs = useRef<Array<HTMLInputElement | null>>([]);
@@ -274,7 +277,7 @@ export default function Home() {
       setNoticeType("success");
       return;
     }
-    const successMessage = /^(Your password is set\.|Your county has been saved\.|Your CV has been updated\.|Your CV is saved|Application submitted successfully|STK push sent\.|Institution registered\.|Institution details updated\.|Institution and linked head account deleted\.|Your vacancy is now live)/i.test(message);
+    const successMessage = /^(Your password is set\.|Your password has been reset\.|Your county has been saved\.|Your CV has been updated\.|Your CV is saved|Application submitted successfully|STK push sent\.|Institution registered\.|Institution details updated\.|Institution and linked head account deleted\.|Your vacancy is now live)/i.test(message);
     setNoticeType(successMessage ? "success" : "error");
   }
 
@@ -488,21 +491,29 @@ export default function Home() {
       }
     }
 
-    const { data: authListener } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
       if (!active) return;
+      const isRecoveryCallback = event === "PASSWORD_RECOVERY"
+        || (event === "INITIAL_SESSION" && new URLSearchParams(window.location.search).get("reset_password") === "1");
+      if (session?.user && isRecoveryCallback) {
+        setPasswordRecoveryRequired(true);
+        setEnteredWorkspace(false);
+        setWorkspaceLoading(false);
+        setAuthFeedback(null);
+        return;
+      }
       if (session?.user) {
         setUserEmail(session.user.email ?? "");
         window.setTimeout(() => void loadAccount(session.user), 0);
       } else {
         setWorkspaceLoading(false);
-        if (new URLSearchParams(window.location.search).get("setup") === "password") {
+        const searchParams = new URLSearchParams(window.location.search);
+        const invalidInvitationLink = searchParams.get("setup") === "password";
+        const invalidPasswordResetLink = searchParams.get("reset_password") === "1";
+        if (invalidInvitationLink || invalidPasswordResetLink) {
           window.history.replaceState({}, "", window.location.pathname);
           setAuthMode("signin");
           setModal("auth");
-          setAuthFeedback({
-            type: "error",
-            message: "This invitation link is invalid, expired, or has already been used. If you already set your password, sign in with it. Otherwise, ask the administrator to send a new invitation.",
-          });
         }
         setUserEmail("");
         setUserName("");
@@ -511,10 +522,19 @@ export default function Home() {
         setHasSavedCv(false);
         setInstitutionApplicants([]);
         setPasswordSetupRequired(false);
+        setPasswordRecoveryRequired(false);
         setLoginChallenge(null);
         setEnteredWorkspace(false);
         setLandingMessage("");
         setAuthFeedback(null);
+        if (invalidInvitationLink) {
+          setAuthFeedback({
+            type: "error",
+            message: "This invitation link is invalid, expired, or has already been used. If you already set your password, sign in with it. Otherwise, ask the administrator to send a new invitation.",
+          });
+        } else if (invalidPasswordResetLink) {
+          setAuthFeedback({ type: "error", message: "This password reset link is invalid or expired. Request a new reset link to continue." });
+        }
         setRole("teacher");
         setActiveNav(roleInfo.teacher.nav[0]);
         setInstitutionId("");
@@ -1012,6 +1032,75 @@ export default function Home() {
     }
   }
 
+  async function requestPasswordReset(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "").trim();
+    const supabase = getSupabase();
+    if (!supabase) {
+      setAuthFeedback({ type: "error", message: "Password reset is unavailable. Add your Supabase URL and publishable key to .env.local." });
+      return;
+    }
+
+    setLoading(true);
+    setAuthFeedback(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/?reset_password=1`,
+      });
+      if (error) {
+        setAuthFeedback({ type: "error", message: `Could not send a password reset link: ${error.message}` });
+        return;
+      }
+      setAuthFeedback({
+        type: "success",
+        message: "If an account exists for that email, we’ve sent a password reset link. Check your inbox and spam folder.",
+      });
+    } catch (error) {
+      setAuthFeedback({ type: "error", message: error instanceof Error ? `Could not send a password reset link: ${error.message}` : "Could not send a password reset link. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resetAccountPassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password") ?? "");
+    const confirmation = String(form.get("password_confirmation") ?? "");
+    if (password.length < 8) {
+      setAuthFeedback({ type: "error", message: "Use a password with at least 8 characters." });
+      return;
+    }
+    if (password !== confirmation) {
+      setAuthFeedback({ type: "error", message: "The passwords do not match." });
+      return;
+    }
+    const supabase = getSupabase();
+    if (!supabase) {
+      setAuthFeedback({ type: "error", message: "Password reset is unavailable because Supabase is not configured." });
+      return;
+    }
+
+    setLoading(true);
+    setAuthFeedback(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        setAuthFeedback({ type: "error", message: `Could not reset your password: ${error.message}` });
+        return;
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+      setPasswordRecoveryRequired(false);
+      setAuthFeedback(null);
+      setNotice("Your password has been reset.");
+    } catch (error) {
+      setAuthFeedback({ type: "error", message: error instanceof Error ? `Could not reset your password: ${error.message}` : "Could not reset your password. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function setInvitationPassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -1496,9 +1585,9 @@ export default function Home() {
       <>
         <button className="modal-close" onClick={() => { if (!loading) { setModal(null); setLoginChallenge(null); } }} aria-label="Close" disabled={loading}><Icon name="close" size={19} /></button>
         <div className="modal-mark"><span className="brand-mark"><span /></span></div>
-        <span className="job-category">{loginChallenge ? "EMAIL VERIFICATION" : authMode === "signup" ? "YOUR NEXT CHAPTER" : "WELCOME BACK"}</span>
-        <h2 id="modal-heading">{loginChallenge ? "Enter your sign-in code." : authMode === "signup" ? "Join the community." : "Good to see you again."}</h2>
-        <p className="modal-description">{loginChallenge ? `Enter the six-digit code sent to ${loginChallenge.email}.` : authMode === "signup" ? "Create a free teacher account to view and apply for opportunities across Kenya." : "Sign in with your password. We’ll email you a one-time code to finish signing in."}</p>
+        <span className="job-category">{loginChallenge ? "EMAIL VERIFICATION" : authMode === "signup" ? "YOUR NEXT CHAPTER" : authMode === "forgot-password" ? "ACCOUNT RECOVERY" : "WELCOME BACK"}</span>
+        <h2 id="modal-heading">{loginChallenge ? "Enter your sign-in code." : authMode === "signup" ? "Join the community." : authMode === "forgot-password" ? "Reset your password." : "Good to see you again."}</h2>
+        <p className="modal-description">{loginChallenge ? `Enter the six-digit code sent to ${loginChallenge.email}.` : authMode === "signup" ? "Create a free teacher account to view and apply for opportunities across Kenya." : authMode === "forgot-password" ? "Enter the email address linked to your account. We’ll send you a secure link to choose a new password." : "Sign in with your password. We’ll email you a one-time code to finish signing in."}</p>
         {loginChallenge ? <>
           <form className="modal-form" onSubmit={(event) => { event.preventDefault(); void verifyLoginOtp(loginOtp); }} aria-busy={loading}>
             <label>Email one-time code<span className="auth-otp-inputs" role="group" aria-label="Six-digit sign-in code">
@@ -1529,12 +1618,23 @@ export default function Home() {
             <button className="primary-button modal-submit" disabled={loading || !/^\d{6}$/.test(loginOtp)}>{loading ? "Verifying…" : "Verify and sign in"} {!loading && <Icon name="arrow" size={15} />}</button>
           </form>
           <div className="switch-auth"><button disabled={loading} onClick={() => void resendLoginOtp()}>Resend code</button><span> · </span><button disabled={loading} onClick={() => { setLoginChallenge(null); setLoginOtp(""); setAuthFeedback(null); }}>Use a different sign-in</button></div>
+        </> : authMode === "forgot-password" ? <>
+          <form className="modal-form" onSubmit={(event) => void requestPasswordReset(event)} aria-busy={loading}>
+            <label>Email address<input name="email" type="email" placeholder="you@example.com" autoComplete="email" required disabled={loading} /></label>
+            <button className="primary-button modal-submit" disabled={loading}>
+              {loading && <span className="button-spinner" aria-hidden="true" />}
+              {loading ? "Sending reset link…" : "Send reset link"}
+              {!loading && <Icon name="arrow" size={15} />}
+            </button>
+          </form>
+          <p className="switch-auth">Remembered your password? <button disabled={loading} onClick={() => { setAuthMode("signin"); setAuthFeedback(null); }}>Back to sign in</button></p>
         </> : <>
           <form className={`modal-form${authMode === "signup" ? " auth-signup-form" : ""}`} onSubmit={(event) => void submitAuth(event)} aria-busy={loading}>
             {authMode === "signup" && <label>Full name<input name="full_name" placeholder="Your full name" autoComplete="name" required disabled={loading} /></label>}
             {authMode === "signup" && <label>Your county<select name="county" defaultValue="" required disabled={loading}><option value="" disabled>Select your county</option>{KENYAN_COUNTIES.map((countyName) => <option key={countyName} value={countyName}>{countyName}</option>)}</select></label>}
             <label>Email address<input name="email" type="email" placeholder="you@example.com" autoComplete="email" required disabled={loading} /></label>
             <label>Password<span className="password-input-wrap"><input id="auth-password" name="password" type={showAuthPassword ? "text" : "password"} placeholder="At least 8 characters" minLength={8} autoComplete={authMode === "signup" ? "new-password" : "current-password"} required disabled={loading} /><button className="password-visibility-toggle" type="button" aria-label={showAuthPassword ? "Hide password" : "Show password"} aria-pressed={showAuthPassword} aria-controls="auth-password" onClick={() => setShowAuthPassword((visible) => !visible)}><Icon name={showAuthPassword ? "eyeOff" : "eye"} size={17} /></button></span></label>
+            {authMode === "signin" && <button className="forgot-password-link" type="button" disabled={loading} onClick={() => { setAuthMode("forgot-password"); setAuthFeedback(null); }}>Forgot password?</button>}
             <button className="primary-button modal-submit" disabled={loading}>
               {loading && <span className="button-spinner" aria-hidden="true" />}
               {loading ? "Please wait…" : authMode === "signup" ? "Create teacher account" : "Sign in"}
@@ -1548,6 +1648,28 @@ export default function Home() {
   }
 
   if (!enteredWorkspace) {
+    if (passwordRecoveryRequired) {
+      return (
+        <div className="modal-backdrop">
+          <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="password-recovery-heading">
+            <div className="modal-mark"><span className="brand-mark"><span /></span></div>
+            <span className="job-category">ACCOUNT RECOVERY</span>
+            <h2 id="password-recovery-heading">Choose a new password.</h2>
+            <p className="modal-description">Use at least 8 characters. Your new password will secure your MwalimuConnect account.</p>
+            {authFeedback && <p className={`auth-feedback ${authFeedback.type}`} role={authFeedback.type === "error" ? "alert" : "status"}>{authFeedback.message}</p>}
+            <form className="modal-form" onSubmit={(event) => void resetAccountPassword(event)} aria-busy={loading}>
+              <label>New password<span className="password-input-wrap"><input id="recovery-password" name="password" type={showRecoveryPassword ? "text" : "password"} minLength={8} autoComplete="new-password" required disabled={loading} /><button className="password-visibility-toggle" type="button" aria-label={showRecoveryPassword ? "Hide new password" : "Show new password"} aria-pressed={showRecoveryPassword} aria-controls="recovery-password" onClick={() => setShowRecoveryPassword((visible) => !visible)}><Icon name={showRecoveryPassword ? "eyeOff" : "eye"} size={17} /></button></span></label>
+              <label>Confirm new password<span className="password-input-wrap"><input id="recovery-password-confirmation" name="password_confirmation" type={showRecoveryPasswordConfirmation ? "text" : "password"} minLength={8} autoComplete="new-password" required disabled={loading} /><button className="password-visibility-toggle" type="button" aria-label={showRecoveryPasswordConfirmation ? "Hide password confirmation" : "Show password confirmation"} aria-pressed={showRecoveryPasswordConfirmation} aria-controls="recovery-password-confirmation" onClick={() => setShowRecoveryPasswordConfirmation((visible) => !visible)}><Icon name={showRecoveryPasswordConfirmation ? "eyeOff" : "eye"} size={17} /></button></span></label>
+              <button className="primary-button modal-submit" disabled={loading}>
+                {loading && <span className="button-spinner" aria-hidden="true" />}
+                {loading ? "Updating password…" : "Update password"}
+                {!loading && <Icon name="arrow" size={15} />}
+              </button>
+            </form>
+          </section>
+        </div>
+      );
+    }
     if (passwordSetupRequired) {
       return (
         <div className="modal-backdrop">

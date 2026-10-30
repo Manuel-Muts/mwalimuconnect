@@ -117,6 +117,51 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .landing-job-footer { display: flex; align-items: center; justify-content: space-between; margin: auto -19px 0; padding: 12px 19px; border-top: 1px solid #e9e9df; color: #7e887d; font-size: 9px; }
 .landing-job-footer button { display: inline-flex; align-items: center; gap: 8px; padding: 0; color: #296947; border: 0; background: transparent; font-size: 9px; font-weight: 700; }
 .landing-job-footer button span { font-size: 14px; }
+.landing-opportunities-showcase { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .92fr); align-items: center; gap: 28px; }
+.landing-opportunities-showcase .landing-job-grid { grid-template-columns: minmax(0, 1fr); }
+.landing-phone-showcase { position: relative; display: grid; min-height: 438px; place-items: center; overflow: hidden; isolation: isolate; }
+.landing-phone-glow { position: absolute; z-index: -1; width: min(94%, 360px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #e6ecdc 0%, #f3f2e9 52%, transparent 72%); }
+.landing-phone { position: relative; width: 246px; height: 408px; padding: 7px; border: 1px solid #374b3c; border-radius: 35px; background: #193d2d; box-shadow: 0 24px 55px #203c2e2b, 0 5px 12px #203c2e18; animation: landing-phone-float 4s ease-in-out infinite; }
+.landing-phone::before { position: absolute; top: 7px; left: 50%; z-index: 4; width: 67px; height: 13px; border-radius: 0 0 10px 10px; background: #193d2d; content: ""; transform: translateX(-50%); }
+.landing-phone-frame { display: flex; height: 100%; flex-direction: column; overflow: hidden; border-radius: 28px; background: #fffefa; }
+.landing-phone-status { display: flex; height: 25px; flex: 0 0 auto; align-items: center; gap: 4px; padding: 0 13px; color: #415449; font-size: 8px; font-weight: 700; }
+.landing-phone-status span { margin-right: auto; }
+.landing-phone-status i { width: 7px; height: 7px; border: 1px solid #55715d; border-radius: 50%; }
+.landing-phone-status i:last-child { width: 12px; height: 6px; border-radius: 2px; }
+.landing-phone-brand { display: flex; height: 39px; flex: 0 0 auto; align-items: center; gap: 7px; padding: 0 12px; border-bottom: 1px solid #eef0e9; }
+.landing-phone-brand-mark { width: 22px; height: 22px; border-radius: 8px 8px 8px 3px; }
+.landing-phone-wordmark { color: #173c2b; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: -.5px; white-space: nowrap; }
+.landing-phone-connect-animation { width: 23px; height: 12px; margin-left: -3px; }
+.landing-phone-screen-area { position: relative; min-height: 0; flex: 1 1 auto; overflow: hidden; }
+.landing-phone-screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 17px 14px 12px; opacity: 0; transform: translateY(8px); transition: opacity .65s ease, transform .65s ease; pointer-events: none; }
+.landing-phone-screen.is-active { z-index: 1; opacity: 1; transform: translateY(0); }
+.landing-phone-signup-screen { padding: 12px 14px 8px; }
+.landing-phone-signup-screen h3 { margin-top: 5px; }
+.landing-phone-signup-screen > p { margin-bottom: 7px; }
+.landing-phone-signup-screen .landing-phone-field { height: 27px; margin-bottom: 5px; }
+.landing-phone-signup-screen .landing-phone-button { height: 27px; margin: 2px 0 6px; }
+.landing-phone-kicker { color: #8a795f; font-size: 6px; font-weight: 700; letter-spacing: 1px; }
+.landing-phone-screen h3 { margin: 8px 0 4px; color: #1c3829; font-family: Manrope, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -.4px; line-height: 1.25; }
+.landing-phone-screen > p { margin: 0 0 13px; color: #839087; font-size: 8px; line-height: 1.5; }
+.landing-phone-field { display: flex; height: 30px; flex: 0 0 auto; align-items: center; justify-content: space-between; margin-bottom: 7px; padding: 0 9px; color: #8c978d; border: 1px solid #e6eae2; border-radius: 5px; background: #fff; font-size: 7px; }
+.landing-phone-field span { color: #44594a; letter-spacing: 1px; }
+.landing-phone-button { display: grid; height: 31px; flex: 0 0 auto; margin: 3px 0 9px; place-items: center; color: #fff; border-radius: 5px; background: #1b6848; font-size: 8px; font-weight: 700; }
+.landing-phone-screen > small { color: #90998f; font-size: 7px; line-height: 1.5; text-align: center; }
+.landing-phone-screen > small b { color: #286d49; }
+.landing-phone-code { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin: 7px 0 13px; }
+.landing-phone-code i { display: grid; height: 34px; place-items: center; color: #1b6848; border: 1px solid #dfe8de; border-radius: 5px; background: #fff; font-size: 12px; font-style: normal; font-weight: 700; }
+.landing-phone-search { flex: 0 0 auto; margin: 5px 0 9px; padding: 8px; color: #89948a; border: 1px solid #e6eae2; border-radius: 5px; background: #fff; font-size: 7px; }
+.landing-phone-vacancy { display: grid; gap: 3px; margin-bottom: 6px; padding: 8px; border: 1px solid #e8ebe3; border-radius: 6px; background: #fff; }
+.landing-phone-vacancy b { color: #2e4938; font-family: Manrope, sans-serif; font-size: 8px; }
+.landing-phone-vacancy span { color: #68766d; font-size: 7px; }
+.landing-phone-vacancy small { color: #8d978d; font-size: 6px; }
+.landing-phone-vacancy .landing-phone-status-pill { color: #3e7652; }
+.landing-phone-vacancy .landing-phone-status-pill.is-reviewing { color: #997445; }
+.landing-phone-nav { display: flex; height: 35px; flex: 0 0 auto; align-items: center; justify-content: space-around; border-top: 1px solid #eef0e9; color: #929b91; font-size: 6px; }
+.landing-phone-nav .is-active { color: #23774c; font-weight: 700; }
+.landing-phone-caption { position: absolute; right: 0; bottom: 3px; left: 0; color: #829083; font-size: 9px; text-align: center; }
+@keyframes landing-phone-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@media (prefers-reduced-motion: reduce) { .landing-phone, .landing-phone-screen { animation: none; transition: none; } }
 .landing-how { display: grid; grid-template-columns: .85fr 1.15fr; align-items: start; gap: 80px; padding: 72px max(calc((100vw - 1140px) / 2), 52px) 86px; background: #edf0e7; }
 .landing-how-heading { padding-top: 8px; }
 .landing-how-heading .landing-section-label { line-height: 1.8; }
@@ -207,7 +252,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .top-avatar { display: grid; width: 33px; height: 33px; flex: 0 0 auto; place-items: center; color: #38644d; border-radius: 50%; background: #e5eee5; font-size: 10px; font-weight: 700; }
 
 .content-area { width: calc(100% - 252px); min-height: 100vh; margin-left: 252px; padding-top: 66px; }
-.topbar { position: fixed; top: 0; right: 0; left: 252px; z-index: 40; display: flex; height: 66px; align-items: center; justify-content: space-between; padding: 0 43px; border-bottom: 1px solid #dfe9df; background: rgba(237,245,239,.96); backdrop-filter: blur(12px); }
+.topbar { position: fixed; top: 0; right: 0; left: 252px; z-index: 40; display: flex; height: 66px; align-items: center; justify-content: space-between; padding: 0 43px; border-bottom: 1px solid #dfe9df; background: rgba(237,245,239,.96); }
 .breadcrumb { display: flex; align-items: center; gap: 11px; color: #8d9690; font-size: 11px; }
 .breadcrumb strong { color: #33423a; font-weight: 600; }
 .crumb-slash { color: #c4cbc6; }
@@ -522,6 +567,8 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .form-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .modal-submit { width: 100%; margin-top: 4px; }
 .modal-submit:disabled { cursor: wait; opacity: .78; }
+.forgot-password-link { justify-self: end; margin-top: -7px; padding: 0; color: #28784e; border: 0; background: transparent; font-size: 10px; font-weight: 700; }
+.forgot-password-link:disabled { cursor: wait; opacity: .6; }
 .button-spinner { width: 14px; height: 14px; flex: 0 0 auto; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
 .auth-feedback { margin: 0 0 14px; padding: 10px 11px; border: 1px solid; border-radius: 7px; font-size: 11px; line-height: 1.5; }
@@ -597,6 +644,10 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .landing-job-card { min-height: 188px; }
   .landing-job-card h3 { margin-top: 14px; }
   .landing-job-details { margin-top: 13px; }
+  .landing-opportunities-showcase { grid-template-columns: 1fr; gap: 26px; }
+  .landing-phone-showcase { min-height: 425px; }
+  .landing-phone { width: 238px; height: 392px; }
+  .landing-phone-caption { bottom: 0; font-size: 8px; }
   .landing-how { gap: 26px; padding: 51px 24px 55px; }
   .landing-how-heading .landing-section-label { max-width: 300px; font-size: 7px; }
   .landing-steps { grid-template-columns: 1fr; gap: 18px; }
@@ -653,7 +704,7 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .sidebar { display: none; }
   .app-shell { width: 100%; }
   .content-area { width: 100%; min-width: 0; margin: 0; padding-top: 58px; }
-  .topbar { right: 0; left: 0; width: 100%; min-width: 0; height: 58px; gap: 10px; padding: 0 19px; }
+  .topbar { position: fixed !important; top: 0; right: 0; left: 0; width: 100%; min-width: 0; height: 58px; gap: 10px; padding: 0 19px; transform: translate3d(0, 0, 0); border-bottom-color: #dfe9df; background: #edf5ef; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .breadcrumb { min-width: 0; flex: 1 1 auto; overflow: hidden; white-space: nowrap; }
   .breadcrumb strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topbar-actions { flex: 0 0 auto; }
@@ -661,7 +712,7 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .filter-bar { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .search-field { min-width: 0; grid-column: 1 / -1; }
   .select-field, .level-select { min-width: 0; }
-  .mobile-nav { position: fixed; right: 0; bottom: 0; left: 0; z-index: 50; display: flex; width: 100%; height: calc(62px + env(safe-area-inset-bottom)); align-items: flex-start; justify-content: flex-start; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; padding: 8px 8px env(safe-area-inset-bottom); border-top: 1px solid #dfe9df; background: #f1f6f1; box-shadow: 0 -6px 20px rgba(27,55,37,.06); backdrop-filter: blur(12px); scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .mobile-nav { position: fixed !important; right: 0; bottom: 0; left: 0; z-index: 50; display: flex; width: 100%; height: calc(62px + env(safe-area-inset-bottom)); align-items: flex-start; justify-content: flex-start; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; padding: 8px 8px env(safe-area-inset-bottom); border-top: 1px solid #dfe9df; background: #f1f6f1; box-shadow: 0 -6px 20px rgba(27,55,37,.06); transform: translate3d(0, 0, 0); scrollbar-width: thin; }
   .mobile-nav button { display: flex; min-width: 68px; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 4px; padding: 4px 6px; color: #939c95; border: 0; background: none; font-size: 9px; white-space: nowrap; }
   .mobile-nav button.active { color: #23774c; font-weight: 700; }
   .mobile-nav button.active svg { stroke-width: 2.1; }

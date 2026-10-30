@@ -87,6 +87,122 @@ function LandingCarousel({
   );
 }
 
+function LandingPhoneShowcase() {
+  const [activeScreen, setActiveScreen] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => setPrefersReducedMotion(motionPreference.matches);
+    updateMotionPreference();
+    motionPreference.addEventListener("change", updateMotionPreference);
+    return () => motionPreference.removeEventListener("change", updateMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const intervalId = window.setInterval(() => {
+      setActiveScreen((screen) => (screen + 1) % 7);
+    }, 3200);
+    return () => window.clearInterval(intervalId);
+  }, [prefersReducedMotion]);
+
+  const screenClass = (index: number) => `landing-phone-screen${activeScreen === index ? " is-active" : ""}`;
+
+  return (
+    <div className="landing-phone-showcase" role="img" aria-label="Animated preview of teacher sign-up, sign-in code verification, and the Discover, Applications, and Saved workspace tabs">
+      <div className="landing-phone-glow" aria-hidden="true" />
+      <div className="landing-phone">
+        <div className="landing-phone-frame">
+          <div className="landing-phone-status"><span>9:41</span><i /><i /><i /></div>
+          <div className="landing-phone-brand">
+            <span className="landing-brand-mark landing-phone-brand-mark"><span /></span>
+            <span className="landing-phone-wordmark">mwalimu<span className="landing-brand-light">connect</span></span>
+            <svg className="landing-connect-animation landing-phone-connect-animation" viewBox="0 0 48 24" aria-hidden="true">
+              <circle className="landing-socket" cx="12" cy="12" r="8" />
+              <circle className="landing-socket-slots" cx="10" cy="9" r="1" />
+              <circle className="landing-socket-slots" cx="14" cy="15" r="1" />
+              <g className="landing-plug">
+                <path className="landing-plug-prongs" d="M25 9h-5m5 6h-5" />
+                <rect className="landing-plug-body" x="25" y="6" width="10" height="12" rx="4" />
+                <path className="landing-plug-cord" d="M35 12h2c2 0 3 1 3 3v2" />
+              </g>
+              <circle className="landing-connect-spark" cx="19" cy="12" r="1.5" />
+            </svg>
+          </div>
+          <div className="landing-phone-screen-area" aria-hidden="true">
+            <div className={`${screenClass(0)} landing-phone-signup-screen`}>
+              <span className="landing-phone-kicker">YOUR NEXT CHAPTER</span>
+              <h3>Create your account</h3>
+              <p>Join Kenya&apos;s teacher community.</p>
+              <div className="landing-phone-field">Full name</div>
+              <div className="landing-phone-field">Email address</div>
+              <div className="landing-phone-field">County <span>Select county</span></div>
+              <div className="landing-phone-field">Create password <span>••••••••</span></div>
+              <div className="landing-phone-button">Create account</div>
+              <small>Already a member? <b>Sign in</b></small>
+            </div>
+            <div className={screenClass(1)}>
+              <span className="landing-phone-kicker">WELCOME TO MWALIMUCONNECT</span>
+              <h3>Your account is ready</h3>
+              <p>Your teacher profile is set up. Sign in anytime to explore teaching opportunities.</p>
+              <div className="landing-phone-button">Explore opportunities</div>
+              <small>Start your next chapter with MwalimuConnect.</small>
+            </div>
+            <div className={screenClass(2)}>
+              <span className="landing-phone-kicker">WELCOME BACK</span>
+              <h3>Sign in securely</h3>
+              <p>Pick up where your next chapter begins.</p>
+              <div className="landing-phone-field">Email address</div>
+              <div className="landing-phone-field">Password <span>••••••••</span></div>
+              <div className="landing-phone-button">Sign in</div>
+              <small>We&apos;ll email you a code to finish signing in.</small>
+            </div>
+            <div className={screenClass(3)}>
+              <span className="landing-phone-kicker">SECURE SIGN-IN</span>
+              <h3>Check your email</h3>
+              <p>Enter the six-digit sign-in code we sent you.</p>
+              <div className="landing-phone-code"><i>4</i><i>8</i><i>2</i><i>1</i><i>6</i><i>3</i></div>
+              <div className="landing-phone-button">Verify and sign in</div>
+              <small>This one-time code keeps your account secure.</small>
+            </div>
+            <div className={screenClass(4)}>
+              <span className="landing-phone-kicker">MADE FOR EDUCATORS</span>
+              <h3>Find your next opportunity</h3>
+              <div className="landing-phone-search">⌕ &nbsp; Search by role or school</div>
+              <div className="landing-phone-vacancy"><b>Primary Teacher</b><span>Green Valley School</span><small>Nairobi · Lower Primary</small></div>
+              <div className="landing-phone-vacancy"><b>ECDE Educator</b><span>Bright Start Academy</span><small>Kiambu · Early Years</small></div>
+              <div className="landing-phone-vacancy"><b>Teaching Intern</b><span>Horizon Learning Centre</span><small>Nakuru · JSS</small></div>
+            </div>
+            <div className={screenClass(5)}>
+              <span className="landing-phone-kicker">YOUR JOB SEARCH</span>
+              <h3>Applications</h3>
+              <p>Keep track of your recent applications.</p>
+              <div className="landing-phone-vacancy"><b>Primary Teacher</b><span>Green Valley School</span><small className="landing-phone-status-pill">Application sent · 2 days ago</small></div>
+              <div className="landing-phone-vacancy"><b>ECDE Educator</b><span>Bright Start Academy</span><small className="landing-phone-status-pill is-reviewing">Under review · 1 week ago</small></div>
+              <div className="landing-phone-vacancy"><b>Teaching Intern</b><span>Horizon Learning Centre</span><small className="landing-phone-status-pill">Application sent · 1 week ago</small></div>
+            </div>
+            <div className={screenClass(6)}>
+              <span className="landing-phone-kicker">OPPORTUNITIES TO REVISIT</span>
+              <h3>Saved jobs</h3>
+              <p>Your shortlist, ready when you are.</p>
+              <div className="landing-phone-vacancy"><b>Primary Teacher</b><span>Green Valley School</span><small>Nairobi · Saved today</small></div>
+              <div className="landing-phone-vacancy"><b>Science Teacher</b><span>Lakeview Academy</span><small>Kisumu · Saved yesterday</small></div>
+              <div className="landing-phone-vacancy"><b>ECDE Educator</b><span>Bright Start Academy</span><small>Kiambu · Saved 3 days ago</small></div>
+            </div>
+          </div>
+          <div className="landing-phone-nav">
+            <span className={activeScreen === 4 ? "is-active" : ""}>Discover</span>
+            <span className={activeScreen === 5 ? "is-active" : ""}>Applications</span>
+            <span className={activeScreen === 6 ? "is-active" : ""}>Saved</span>
+          </div>
+        </div>
+      </div>
+      <span className="landing-phone-caption">From sign-up to your next opportunity.</span>
+    </div>
+  );
+}
+
 export default function LandingPage({
   onBrowse,
   onSchools,
@@ -153,13 +269,16 @@ export default function LandingPage({
           <div><span className="landing-section-label">A GOOD PLACE TO BEGIN</span><h2>Opportunities with<br /><em>meaning.</em></h2></div>
           <div className="landing-heading-aside"><p>Sign in to see verified teaching vacancies—including BOM-employed teaching positions—and education internships in your county.</p><button className="landing-text-link" onClick={onBrowse}>Sign in to browse <span aria-hidden="true">↗</span></button></div>
         </div>
-        <div className="landing-job-grid">
-          <article className="landing-job-card landing-job-1">
-            <div className="landing-job-top"><span className="landing-job-category">MEMBER ACCESS</span></div>
-            <h3>Opportunities that fit your community.</h3>
-            <p>Create an account to browse live listings in your county.</p>
-            <div className="landing-job-footer"><span>Teacher accounts are free</span><button onClick={onBrowse}>Sign in <span aria-hidden="true">→</span></button></div>
-          </article>
+        <div className="landing-opportunities-showcase">
+          <div className="landing-job-grid">
+            <article className="landing-job-card landing-job-1">
+              <div className="landing-job-top"><span className="landing-job-category">MEMBER ACCESS</span></div>
+              <h3>Opportunities that fit your community.</h3>
+              <p>Create an account to browse live listings in your county.</p>
+              <div className="landing-job-footer"><span>Teacher accounts are free</span><button onClick={onBrowse}>Sign in <span aria-hidden="true">→</span></button></div>
+            </article>
+          </div>
+          <LandingPhoneShowcase />
         </div>
       </section>
 
