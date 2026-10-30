@@ -527,6 +527,24 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .account-profile dl > div { display: flex; justify-content: space-between; gap: 15px; padding: 11px 2px; border-bottom: 1px solid #edf0ed; font-size: 11px; }
 .account-profile dt { color: #849087; }
 .account-profile dd { margin: 0; color: #35473b; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.account-passkeys { display: grid; gap: 12px; margin-top: 20px; padding-top: 18px; border-top: 1px solid #edf0ed; }
+.account-passkeys-heading h3 { margin: 0 0 5px; color: #35473b; font-size: 13px; }
+.account-passkeys-heading p, .passkey-empty { margin: 0; color: #849087; font-size: 10px; line-height: 1.6; }
+.account-passkeys .auth-feedback { margin: 0; }
+.passkey-list { display: grid; max-height: 230px; gap: 10px; overflow-y: auto; margin: 0; padding: 0 2px 0 0; list-style: none; }
+.passkey-item { display: grid; gap: 8px; padding: 11px; border: 1px solid #e8eee8; border-radius: 8px; background: #fbfcfb; }
+.passkey-rename-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.passkey-rename-form label { display: grid; min-width: 0; gap: 5px; color: #526158; font-size: 9px; font-weight: 600; }
+.passkey-rename-form input { width: 100%; min-width: 0; height: 34px; padding: 0 9px; color: #2e4035; border: 1px solid #e3e9e4; border-radius: 6px; background: #fff; font-size: 10px; }
+.passkey-rename-form .outline-button { min-height: 34px; padding: 0 9px; font-size: 9px; }
+.passkey-date { margin: 0; color: #849087; font-size: 9px; }
+.passkey-remove-link { justify-self: start; padding: 0; color: #a94343; border: 0; background: transparent; font-size: 9px; font-weight: 600; }
+.passkey-remove-button { color: #a94343; border-color: #eddada; }
+.passkey-remove-button:hover { background: #fff5f4; }
+.passkey-remove-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding-top: 8px; border-top: 1px solid #edf0ed; }
+.passkey-remove-confirm span { flex: 1 0 100%; color: #8d302d; font-size: 9px; line-height: 1.5; }
+.passkey-remove-confirm .outline-button { min-height: 30px; padding: 0 9px; font-size: 9px; }
+.passkey-add-button { justify-self: start; min-height: 35px; }
 .page-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 35px; padding-top: 15px; color: #9ba39d; border-top: 1px solid #e9eee9; font-size: 9px; }
 .footer-spark { margin-left: 4px; color: #4f986b; }
 
@@ -573,6 +591,10 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .modal-submit:disabled { cursor: wait; opacity: .78; }
 .forgot-password-link { justify-self: end; margin-top: -7px; padding: 0; color: #28784e; border: 0; background: transparent; font-size: 10px; font-weight: 700; }
 .forgot-password-link:disabled { cursor: wait; opacity: .6; }
+.passkey-signin { display: grid; gap: 11px; margin-top: 17px; }
+.passkey-divider { display: flex; align-items: center; gap: 12px; color: #9ba39d; font-size: 9px; }
+.passkey-divider::before, .passkey-divider::after { height: 1px; flex: 1; background: #e9eee9; content: ""; }
+.passkey-signin-button { width: 100%; min-height: 39px; color: #315640; border-color: #dce5dd; font-size: 10px; }
 .button-spinner { width: 14px; height: 14px; flex: 0 0 auto; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
 .auth-feedback { margin: 0 0 14px; padding: 10px 11px; border: 1px solid; border-radius: 7px; font-size: 11px; line-height: 1.5; }

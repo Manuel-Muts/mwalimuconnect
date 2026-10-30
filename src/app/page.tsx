@@ -69,6 +69,12 @@ type InstitutionPageCacheEntry = {
   institutions: RegisteredInstitution[];
   totalCount: number;
 };
+type PasskeyListItem = {
+  id: string;
+  friendly_name?: string;
+  created_at: string;
+  last_used_at?: string;
+};
 
 const emptyTeacherCv: TeacherCv = {
   full_name: "",
@@ -105,6 +111,7 @@ const iconPaths: Record<string, React.ReactNode> = {
   close: <><path d="m18 6-12 12M6 6l12 12" /></>,
   eye: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>,
   eyeOff: <><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a14.8 14.8 0 0 1-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.5 10.5 0 0 0 4-.8" /></>,
+  passkey: <><circle cx="8" cy="8" r="5" /><path d="m11.5 11.5 9 9m-4-4 2-2m-5-1 2-2" /></>,
 };
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -159,6 +166,13 @@ function isVacancyOpen(applicationDeadline: string) {
 
 function isRole(value: unknown): value is Role {
   return value === "teacher" || value === "institution" || value === "admin";
+}
+
+function passkeyBrowserError() {
+  if (typeof window === "undefined") return "Passkeys are unavailable in this environment.";
+  if (!window.isSecureContext) return "Passkeys require a secure connection. Open this site using HTTPS or localhost.";
+  if (typeof PublicKeyCredential === "undefined") return "This browser does not support passkeys. Try a current browser or use password sign-in.";
+  return null;
 }
 
 function isSubscriptionPlan(value: unknown): value is SubscriptionPlan {
@@ -216,6 +230,11 @@ export default function Home() {
   const [loginOtp, setLoginOtp] = useState("");
   const loginOtpInputs = useRef<Array<HTMLInputElement | null>>([]);
   const loginOtpVerificationInProgress = useRef(false);
+  const [passkeys, setPasskeys] = useState<PasskeyListItem[]>([]);
+  const [passkeysLoading, setPasskeysLoading] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState("");
+  const [passkeyFeedback, setPasskeyFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [passkeyPendingRemoval, setPasskeyPendingRemoval] = useState<string | null>(null);
   const [authFeedback, setAuthFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [notice, setNoticeMessage] = useState("");
   const [noticeType, setNoticeType] = useState<"success" | "error">("success");
@@ -953,6 +972,149 @@ export default function Home() {
     }
   }
 
+  async function signInWithPasskey() {
+    if (loading) return;
+    const unsupportedReason = passkeyBrowserError();
+    if (unsupportedReason) {
+      setAuthFeedback({ type: "error", message: unsupportedReason });
+      return;
+    }
+    const supabase = getSupabase();
+    if (!supabase) {
+      setAuthFeedback({ type: "error", message: "Passkey sign-in is unavailable because Supabase is not configured." });
+      return;
+    }
+
+    setLoading(true);
+    setAuthFeedback(null);
+    try {
+      const { error } = await supabase.auth.signInWithPasskey();
+      if (error) throw error;
+      setLoginChallenge(null);
+      setModal(null);
+    } catch (error) {
+      const cancelled = error instanceof Error && (error.name === "NotAllowedError" || error.name === "AbortError");
+      setAuthFeedback({
+        type: "error",
+        message: cancelled
+          ? "Passkey sign-in was cancelled or timed out. Please try again."
+          : `Could not sign in with a passkey: ${error instanceof Error ? error.message : "Please try again."}`,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadPasskeys(): Promise<boolean> {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setPasskeyFeedback({ type: "error", message: "Passkey management is unavailable because Supabase is not configured." });
+      return false;
+    }
+    setPasskeysLoading(true);
+    setPasskeyFeedback(null);
+    try {
+      const { data, error } = await supabase.auth.passkey.list();
+      if (error) throw error;
+      setPasskeys(data ?? []);
+      return true;
+    } catch (error) {
+      setPasskeyFeedback({
+        type: "error",
+        message: `Could not load your passkeys: ${error instanceof Error ? error.message : "Please try again."}`,
+      });
+      return false;
+    } finally {
+      setPasskeysLoading(false);
+    }
+  }
+
+  async function registerPasskey() {
+    if (passkeyBusy) return;
+    const unsupportedReason = passkeyBrowserError();
+    if (unsupportedReason) {
+      setPasskeyFeedback({ type: "error", message: unsupportedReason });
+      return;
+    }
+    const supabase = getSupabase();
+    if (!supabase) {
+      setPasskeyFeedback({ type: "error", message: "Passkey registration is unavailable because Supabase is not configured." });
+      return;
+    }
+    setPasskeyBusy("register");
+    setPasskeyFeedback(null);
+    try {
+      const { error } = await supabase.auth.registerPasskey();
+      if (error) throw error;
+      if (await loadPasskeys()) {
+        setPasskeyFeedback({ type: "success", message: "Passkey added to your account." });
+      }
+    } catch (error) {
+      setPasskeyFeedback({
+        type: "error",
+        message: `Could not add a passkey: ${error instanceof Error ? error.message : "Please try again."}`,
+      });
+    } finally {
+      setPasskeyBusy("");
+    }
+  }
+
+  async function renamePasskey(event: React.FormEvent<HTMLFormElement>, passkeyId: string) {
+    event.preventDefault();
+    if (passkeyBusy) return;
+    const formData = new FormData(event.currentTarget);
+    const friendlyName = String(formData.get("friendly_name") ?? "").trim();
+    if (!friendlyName || friendlyName.length > 120) {
+      setPasskeyFeedback({ type: "error", message: "Enter a passkey name between 1 and 120 characters." });
+      return;
+    }
+    const supabase = getSupabase();
+    if (!supabase) {
+      setPasskeyFeedback({ type: "error", message: "Passkey management is unavailable because Supabase is not configured." });
+      return;
+    }
+    setPasskeyBusy(passkeyId);
+    setPasskeyFeedback(null);
+    try {
+      const { data, error } = await supabase.auth.passkey.update({ passkeyId, friendlyName });
+      if (error) throw error;
+      setPasskeys((current) => current.map((passkey) => passkey.id === passkeyId ? data : passkey));
+      setPasskeyFeedback({ type: "success", message: "Passkey name updated." });
+    } catch (error) {
+      setPasskeyFeedback({
+        type: "error",
+        message: `Could not rename this passkey: ${error instanceof Error ? error.message : "Please try again."}`,
+      });
+    } finally {
+      setPasskeyBusy("");
+    }
+  }
+
+  async function removePasskey(passkeyId: string) {
+    if (passkeyBusy) return;
+    const supabase = getSupabase();
+    if (!supabase) {
+      setPasskeyFeedback({ type: "error", message: "Passkey management is unavailable because Supabase is not configured." });
+      return;
+    }
+    setPasskeyBusy(passkeyId);
+    setPasskeyFeedback(null);
+    try {
+      const { error } = await supabase.auth.passkey.delete({ passkeyId });
+      if (error) throw error;
+      setPasskeys((current) => current.filter((passkey) => passkey.id !== passkeyId));
+      setPasskeyPendingRemoval(null);
+      setPasskeyFeedback({ type: "success", message: "Passkey removed from your account." });
+    } catch (error) {
+      setPasskeyFeedback({
+        type: "error",
+        message: `Could not remove this passkey: ${error instanceof Error ? error.message : "Please try again."}`,
+      });
+    } finally {
+      setPasskeyBusy("");
+    }
+  }
+
   async function verifyLoginOtp(code: string) {
     if (!loginChallenge || loading || loginOtpVerificationInProgress.current) return;
     if (!/^\d{6}$/.test(code)) {
@@ -1642,6 +1804,13 @@ export default function Home() {
               {!loading && <Icon name="arrow" size={15} />}
             </button>
           </form>
+          {authMode === "signin" && <div className="passkey-signin">
+            <span className="passkey-divider">or</span>
+            <button className="outline-button passkey-signin-button" type="button" onClick={() => void signInWithPasskey()} disabled={loading}>
+              {loading ? <span className="button-spinner" aria-hidden="true" /> : <Icon name="passkey" size={16} />}
+              Sign in with a passkey
+            </button>
+          </div>}
           <p className="switch-auth">{authMode === "signup" ? "Already have an account?" : "New to MwalimuConnect?"} <button disabled={loading} onClick={() => { setAuthMode(authMode === "signup" ? "signin" : "signup"); setAuthFeedback(null); setLoginChallenge(null); }}>{authMode === "signup" ? "Sign in" : "Create account"}</button></p>
         </>}
       </>
@@ -1741,7 +1910,7 @@ export default function Home() {
             </button>
             {accountMenuOpen && <div className="account-dropdown" role="menu">
               <div className="account-dropdown-role">{roleInfo[role].name}</div>
-              <button role="menuitem" onClick={() => { setAccountMenuOpen(false); setModal("profile"); }}><Icon name="profile" size={16} /> Profile</button>
+              <button role="menuitem" onClick={() => { setAccountMenuOpen(false); setPasskeyPendingRemoval(null); setModal("profile"); void loadPasskeys(); }}><Icon name="profile" size={16} /> Profile</button>
               <button role="menuitem" onClick={() => { setAccountMenuOpen(false); void signOut(); }}><span aria-hidden="true">↪</span> Log out</button>
             </div>}
           </div>
@@ -2059,6 +2228,31 @@ export default function Home() {
                   {role === "institution" && <><div><dt>County</dt><dd>{schoolCounty || "Not available"}</dd></div><div><dt>Subcounty</dt><dd>{schoolSubcounty || "Not available"}</dd></div><div><dt>Institution type</dt><dd>{schoolLevel || "Not available"}</dd></div></>}
                 </dl>
               </div>
+              <section className="account-passkeys" aria-labelledby="passkeys-heading">
+                <div className="account-passkeys-heading">
+                  <h3 id="passkeys-heading">Passkeys</h3>
+                  <p>Use your device’s fingerprint, face, or screen lock to sign in securely.</p>
+                </div>
+                {passkeyFeedback && <p className={`auth-feedback ${passkeyFeedback.type}`} role={passkeyFeedback.type === "error" ? "alert" : "status"}>{passkeyFeedback.message}</p>}
+                {passkeysLoading ? <p className="passkey-empty" role="status">Loading your passkeys…</p> : passkeys.length > 0 ? <ul className="passkey-list">
+                  {passkeys.map((passkey) => <li key={passkey.id} className="passkey-item">
+                    <form className="passkey-rename-form" onSubmit={(event) => void renamePasskey(event, passkey.id)}>
+                      <label>Passkey name<input name="friendly_name" defaultValue={passkey.friendly_name ?? ""} placeholder="Name this passkey" maxLength={120} required disabled={Boolean(passkeyBusy)} /></label>
+                      <button className="outline-button" type="submit" disabled={Boolean(passkeyBusy)}>{passkeyBusy === passkey.id ? "Saving…" : "Save name"}</button>
+                    </form>
+                    <p className="passkey-date">Added {new Date(passkey.created_at).toLocaleDateString()}{passkey.last_used_at ? ` · Last used ${new Date(passkey.last_used_at).toLocaleDateString()}` : ""}</p>
+                    {passkeyPendingRemoval === passkey.id ? <div className="passkey-remove-confirm">
+                      <span>Remove this passkey? You can’t use it to sign in afterward.</span>
+                      <button className="outline-button" type="button" onClick={() => setPasskeyPendingRemoval(null)} disabled={Boolean(passkeyBusy)}>Cancel</button>
+                      <button className="outline-button passkey-remove-button" type="button" onClick={() => void removePasskey(passkey.id)} disabled={Boolean(passkeyBusy)}>{passkeyBusy === passkey.id ? "Removing…" : "Remove passkey"}</button>
+                    </div> : <button className="passkey-remove-link" type="button" onClick={() => setPasskeyPendingRemoval(passkey.id)} disabled={Boolean(passkeyBusy)}>Remove passkey</button>}
+                  </li>)}
+                </ul> : <p className="passkey-empty">No passkeys are registered yet. Add one to sign in without a password.</p>}
+                <button className="primary-button passkey-add-button" type="button" onClick={() => void registerPasskey()} disabled={Boolean(passkeyBusy) || passkeysLoading}>
+                  {passkeyBusy === "register" ? <span className="button-spinner" aria-hidden="true" /> : <Icon name="passkey" size={16} />}
+                  {passkeyBusy === "register" ? "Adding passkey…" : "Add a passkey"}
+                </button>
+              </section>
             </> : modal === "subscription" ? <>
               <span className="job-category">{role === "teacher" ? "NATIONWIDE TEACHER ACCESS" : "SCHOOL SUBSCRIPTION"}</span><h2 id="modal-heading">Start your {subscriptionPlans.find((plan) => plan.key === selectedPlan)?.name.toLowerCase() ?? selectedPlan} plan.</h2><p className="modal-description">Pay securely with M-Pesa to activate {subscriptionPlans.find((plan) => plan.key === selectedPlan)?.durationDays ?? 0} days of {role === "teacher" ? "nationwide vacancy access" : "school workspace access"}.</p>
               <div className="selected-plan-summary"><strong>{subscriptionPlans.find((plan) => plan.key === selectedPlan)?.name}</strong><span>{subscriptionPlans.find((plan) => plan.key === selectedPlan)?.amountKes?.toLocaleString("en-KE", { style: "currency", currency: "KES" }) ?? "Price unavailable"}</span></div>
