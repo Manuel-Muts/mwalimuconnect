@@ -75,6 +75,7 @@ type PasskeyListItem = {
   created_at: string;
   last_used_at?: string;
 };
+const passkeyInvitationIntervalMs = 30 * 24 * 60 * 60 * 1000;
 
 const emptyTeacherCv: TeacherCv = {
   full_name: "",
@@ -175,6 +176,19 @@ function passkeyBrowserError() {
   return null;
 }
 
+function shouldShowPasskeyInvitation(userId: string) {
+  if (typeof window === "undefined" || !window.isSecureContext || typeof PublicKeyCredential === "undefined") return false;
+  const storageKey = `mwalimuconnect:passkey-invitation:${userId}`;
+  try {
+    const lastInvitationAt = Number(window.localStorage.getItem(storageKey));
+    if (lastInvitationAt > 0 && Date.now() - lastInvitationAt < passkeyInvitationIntervalMs) return false;
+    window.localStorage.setItem(storageKey, String(Date.now()));
+  } catch {
+    return true;
+  }
+  return true;
+}
+
 function isSubscriptionPlan(value: unknown): value is SubscriptionPlan {
   if (!value || typeof value !== "object") return false;
   const plan = value as Record<string, unknown>;
@@ -235,6 +249,7 @@ export default function Home() {
   const [passkeyBusy, setPasskeyBusy] = useState("");
   const [passkeyFeedback, setPasskeyFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [passkeyPendingRemoval, setPasskeyPendingRemoval] = useState<string | null>(null);
+  const [passkeyInvitationVisible, setPasskeyInvitationVisible] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [notice, setNoticeMessage] = useState("");
   const [noticeType, setNoticeType] = useState<"success" | "error">("success");
@@ -499,6 +514,17 @@ export default function Home() {
             setApplied(applications.map((application) => application.vacancy_id));
           }
         }
+        const { data: accountPasskeys, error: accountPasskeyError } = await client.auth.passkey.list();
+        if (!active) return;
+        if (accountPasskeyError) {
+          setNotice(`Could not check your passkey setup: ${accountPasskeyError.message}`);
+        } else {
+          setPasskeys(accountPasskeys ?? []);
+          if (accountPasskeys?.length === 0 && shouldShowPasskeyInvitation(user.id)) {
+            setPasskeyFeedback(null);
+            setPasskeyInvitationVisible(true);
+          }
+        }
         setUserEmail(user.email ?? "");
         setEnteredWorkspace(true);
         setWorkspaceLoading(false);
@@ -544,6 +570,8 @@ export default function Home() {
         setPasswordSetupRequired(false);
         setPasswordRecoveryRequired(false);
         setLoginChallenge(null);
+        setPasskeys([]);
+        setPasskeyInvitationVisible(false);
         setEnteredWorkspace(false);
         setLandingMessage("");
         setAuthFeedback(null);
@@ -1046,6 +1074,9 @@ export default function Home() {
     try {
       const { error } = await supabase.auth.registerPasskey();
       if (error) throw error;
+      setPasskeyInvitationVisible(false);
+      setNoticeType("success");
+      setNoticeMessage("Passkey added. You can now use it the next time you sign in.");
       if (await loadPasskeys()) {
         setPasskeyFeedback({ type: "success", message: "Passkey added to your account." });
       }
@@ -1975,6 +2006,18 @@ export default function Home() {
                   : activeNav === "Institutions" ? <button className="primary-button" onClick={() => { setInstitutionRegistrationError(""); setSchoolRegistrationCounty(""); setModal("institution"); }}><span className="plus">+</span> Add institution</button> : null}
             </div>
           </div>
+          {passkeyInvitationVisible && passkeys.length === 0 && <section className="passkey-invitation" aria-labelledby="passkey-invitation-heading">
+            <span className="passkey-invitation-icon"><Icon name="passkey" size={19} /></span>
+            <div className="passkey-invitation-copy">
+              <strong id="passkey-invitation-heading">Make your next sign-in easier.</strong>
+              <p>Set up a passkey with your fingerprint, face unlock, or device PIN. It takes a moment and stays on your device.</p>
+              {passkeyFeedback?.type === "error" && <span className="passkey-invitation-error" role="alert">{passkeyFeedback.message}</span>}
+            </div>
+            <button className="primary-button passkey-invitation-action" type="button" onClick={() => void registerPasskey()} disabled={Boolean(passkeyBusy)}>
+              {passkeyBusy === "register" ? "Setting up…" : "Set up passkey"}
+            </button>
+            <button className="passkey-invitation-dismiss" type="button" onClick={() => setPasskeyInvitationVisible(false)}>Not now</button>
+          </section>}
           {role === "institution" && <div className={`subscription-access-note ${institutionCanPublish ? "is-active" : "is-readonly"}`}>
             <span className="status-badge">{institutionSubscriptionBypassed ? "Development access" : institutionHasAccess ? "Subscription active" : "Read-only access"}</span>
             <span>{institutionSubscriptionBypassed ? "Subscription checks are disabled in development." : institutionHasAccess && subscriptionExpiresAt ? `Access through ${new Date(subscriptionExpiresAt).toLocaleDateString()}.` : "An active subscription is required to publish vacancies."}</span>

@@ -286,6 +286,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @keyframes notice-toast-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .notice-toast { animation: none; } }
 .welcome-greeting { margin: 0 0 12px; color: #287750; font-family: Manrope, sans-serif; font-size: 15px; font-weight: 600; }
+.passkey-invitation { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; margin: 18px 0 20px; padding: 14px 16px; border: 1px solid #dce9dc; border-radius: 10px; background: linear-gradient(110deg, #f2f8f2, #fff); }
+.passkey-invitation-icon { display: grid; width: 38px; height: 38px; place-items: center; color: #18764d; border-radius: 10px; background: #e3f0e5; }
+.passkey-invitation-copy { display: grid; min-width: 0; gap: 4px; }
+.passkey-invitation-copy strong { color: #2e4938; font-size: 11px; }
+.passkey-invitation-copy p { margin: 0; color: #748178; font-size: 10px; line-height: 1.5; }
+.passkey-invitation-error { color: #8d302d; font-size: 10px; line-height: 1.5; }
+.passkey-invitation-action { min-height: 34px; padding: 0 11px; white-space: nowrap; font-size: 10px; }
+.passkey-invitation-dismiss { padding: 7px 4px; color: #77847a; border: 0; background: transparent; font-size: 10px; white-space: nowrap; }
+.passkey-invitation-dismiss:hover { color: #315640; }
 .subscription-access-note { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 11px 13px; border: 1px solid #e3ebe3; border-radius: 8px; background: #fff; color: #69766d; font-size: 10px; }
 .subscription-access-note .text-button { margin-left: auto; flex: 0 0 auto; }
 .subscription-access-note.is-readonly { border-color: #efdfc3; background: #fffbf3; }
@@ -755,6 +764,9 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .vacancy-modal-card { width: min(100%, 680px); padding: 26px; }
   .welcome-row { align-items: flex-start; }
   .welcome-actions { min-width: 0; padding-top: 2px; }
+  .passkey-invitation { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 13px; }
+  .passkey-invitation-action { grid-column: 2; justify-self: start; }
+  .passkey-invitation-dismiss { grid-column: 2; justify-self: start; padding: 2px 0; }
   .hero-card { min-height: 230px; padding: 25px; }
   .hero-content h2 { font-size: 26px; }
   .hero-art { width: 50%; opacity: .86; transform: translateX(25px) scale(.9); transform-origin: center right; }
