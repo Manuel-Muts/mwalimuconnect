@@ -209,6 +209,9 @@ export default function Home() {
   const [showInvitationPassword, setShowInvitationPassword] = useState(false);
   const [showInvitationPasswordConfirmation, setShowInvitationPasswordConfirmation] = useState(false);
   const [loginChallenge, setLoginChallenge] = useState<{ id: string; email: string } | null>(null);
+  const [loginOtp, setLoginOtp] = useState("");
+  const loginOtpInputs = useRef<Array<HTMLInputElement | null>>([]);
+  const loginOtpVerificationInProgress = useRef(false);
   const [authFeedback, setAuthFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [notice, setNoticeMessage] = useState("");
   const [noticeType, setNoticeType] = useState<"success" | "error">("success");
@@ -250,6 +253,12 @@ export default function Home() {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [selectedVacancy]);
+
+  useEffect(() => {
+    if (!loginChallenge || loading || loginOtp !== "") return;
+    const frameId = window.requestAnimationFrame(() => loginOtpInputs.current[0]?.focus());
+    return () => window.cancelAnimationFrame(frameId);
+  }, [loginChallenge, loading, loginOtp]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setNairobiDateTick((tick) => tick + 1), 60_000);
@@ -880,6 +889,7 @@ export default function Home() {
         if (typeof result.challenge_id !== "string" || typeof result.email !== "string") {
           throw new Error("The email verification response was invalid.");
         }
+        setLoginOtp("");
         setLoginChallenge({ id: result.challenge_id, email: result.email });
         setAuthFeedback({ type: "success", message: `We sent a one-time code to ${result.email}.` });
       } catch (error) {
@@ -922,15 +932,13 @@ export default function Home() {
     }
   }
 
-  async function verifyLoginOtp(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!loginChallenge) return;
-    const form = new FormData(event.currentTarget);
-    const code = String(form.get("otp") ?? "").trim();
+  async function verifyLoginOtp(code: string) {
+    if (!loginChallenge || loading || loginOtpVerificationInProgress.current) return;
     if (!/^\d{6}$/.test(code)) {
       setAuthFeedback({ type: "error", message: "Enter the six-digit code from your email." });
       return;
     }
+    loginOtpVerificationInProgress.current = true;
     setLoading(true);
     setAuthFeedback(null);
     try {
@@ -951,8 +959,36 @@ export default function Home() {
       setModal(null);
     } catch (error) {
       setAuthFeedback({ type: "error", message: error instanceof Error ? error.message : "Could not verify the sign-in code." });
+      setLoginOtp("");
+      loginOtpInputs.current[0]?.focus();
     } finally {
+      loginOtpVerificationInProgress.current = false;
       setLoading(false);
+    }
+  }
+
+  function updateLoginOtp(index: number, value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 6);
+    if (!digits) {
+      const nextCode = loginOtp.split("");
+      nextCode[index] = "";
+      setLoginOtp(nextCode.join(""));
+      return;
+    }
+
+    const nextCode = Array.from({ length: 6 }, (_, digitIndex) => loginOtp[digitIndex] ?? "");
+    for (const [digitIndex, digit] of [...digits].entries()) {
+      const targetIndex = index + digitIndex;
+      if (targetIndex >= nextCode.length) break;
+      nextCode[targetIndex] = digit;
+    }
+
+    const code = nextCode.join("");
+    setLoginOtp(code);
+    if (/^\d{6}$/.test(code)) {
+      void verifyLoginOtp(code);
+    } else {
+      loginOtpInputs.current[Math.min(index + digits.length, 5)]?.focus();
     }
   }
 
@@ -1464,11 +1500,35 @@ export default function Home() {
         <h2 id="modal-heading">{loginChallenge ? "Enter your sign-in code." : authMode === "signup" ? "Join the community." : "Good to see you again."}</h2>
         <p className="modal-description">{loginChallenge ? `Enter the six-digit code sent to ${loginChallenge.email}.` : authMode === "signup" ? "Create a free teacher account to view and apply for opportunities across Kenya." : "Sign in with your password. We’ll email you a one-time code to finish signing in."}</p>
         {loginChallenge ? <>
-          <form className="modal-form" onSubmit={(event) => void verifyLoginOtp(event)} aria-busy={loading}>
-            <label>Email one-time code<input name="otp" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" placeholder="6-digit code" required disabled={loading} /></label>
-            <button className="primary-button modal-submit" disabled={loading}>{loading ? "Verifying…" : "Verify and sign in"} {!loading && <Icon name="arrow" size={15} />}</button>
+          <form className="modal-form" onSubmit={(event) => { event.preventDefault(); void verifyLoginOtp(loginOtp); }} aria-busy={loading}>
+            <label>Email one-time code<span className="auth-otp-inputs" role="group" aria-label="Six-digit sign-in code">
+              {Array.from({ length: 6 }, (_, index) => (
+                <input
+                  key={index}
+                  ref={(element) => { loginOtpInputs.current[index] = element; }}
+                  className="auth-otp-digit"
+                  name={index === 0 ? "otp" : undefined}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoComplete={index === 0 ? "one-time-code" : "off"}
+                  aria-label={`Digit ${index + 1} of 6`}
+                  value={loginOtp[index] ?? ""}
+                  required
+                  disabled={loading}
+                  onChange={(event) => updateLoginOtp(index, event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowLeft" && index > 0) loginOtpInputs.current[index - 1]?.focus();
+                    if (event.key === "ArrowRight" && index < 5) loginOtpInputs.current[index + 1]?.focus();
+                    if (event.key === "Backspace" && !loginOtp[index] && index > 0) loginOtpInputs.current[index - 1]?.focus();
+                  }}
+                />
+              ))}
+            </span></label>
+            <button className="primary-button modal-submit" disabled={loading || !/^\d{6}$/.test(loginOtp)}>{loading ? "Verifying…" : "Verify and sign in"} {!loading && <Icon name="arrow" size={15} />}</button>
           </form>
-          <div className="switch-auth"><button disabled={loading} onClick={() => void resendLoginOtp()}>Resend code</button><span> · </span><button disabled={loading} onClick={() => { setLoginChallenge(null); setAuthFeedback(null); }}>Use a different sign-in</button></div>
+          <div className="switch-auth"><button disabled={loading} onClick={() => void resendLoginOtp()}>Resend code</button><span> · </span><button disabled={loading} onClick={() => { setLoginChallenge(null); setLoginOtp(""); setAuthFeedback(null); }}>Use a different sign-in</button></div>
         </> : <>
           <form className={`modal-form${authMode === "signup" ? " auth-signup-form" : ""}`} onSubmit={(event) => void submitAuth(event)} aria-busy={loading}>
             {authMode === "signup" && <label>Full name<input name="full_name" placeholder="Your full name" autoComplete="name" required disabled={loading} /></label>}

@@ -92,8 +92,36 @@ export async function sendOtpEmail(email: string, code: string) {
   await transporter.sendMail({
     from,
     to: email,
-    subject: "Your MwalimuConnect sign-in code",
-    text: `Your MwalimuConnect sign-in code is ${code}. It expires in 10 minutes. If you did not request this code, you can ignore this email.`,
-    html: `<p>Your MwalimuConnect sign-in code is:</p><p style="font-size:28px;font-weight:700;letter-spacing:8px">${code}</p><p>This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>`,
+    subject: "Your MwalimuConnect verification code",
+    text: `Hello,\n\nUse this one-time password to complete your sign-in to MwalimuConnect:\n\n${code}\n\nEnter it on the MwalimuConnect website to continue. This code expires in 10 minutes and can only be used once. Never share it with anyone.\n\nIf you did not request this code, you can safely ignore this email.\n\nThank you for choosing MwalimuConnect.\n\nDesigned and developed by MUTSTECH\n© MwalimuConnect. All rights reserved.`,
+    html: `
+      <div style="margin:0;padding:0;background-color:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#1e293b">
+        <div style="max-width:600px;margin:0 auto;padding:35px 15px">
+          <div style="text-align:center;padding:25px 15px;background-color:#123b70;border-radius:12px 12px 0 0">
+            <h1 style="margin:0;color:#fff;font-size:30px;font-weight:700">MwalimuConnect</h1>
+            <p style="margin:8px 0 0;color:#dbeafe;font-size:13px">Connecting Education. Empowering Learning.</p>
+          </div>
+          <div style="padding:38px 30px;border:1px solid #e2e8f0;border-top:none;background-color:#fff">
+            <h2 style="margin:0 0 18px;text-align:center;color:#123b70;font-size:25px">Your Verification Code</h2>
+            <p style="font-size:15px;line-height:1.8;color:#475569">Hello,</p>
+            <p style="font-size:15px;line-height:1.8;color:#475569">Use the one-time password below to complete your sign-in to MwalimuConnect.</p>
+            <div style="margin:30px 0;padding:25px 15px;text-align:center;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">
+              <p style="margin:0 0 12px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:2px">Your OTP Code</p>
+              <div style="font-size:36px;font-weight:700;letter-spacing:10px;color:#123b70">${code}</div>
+            </div>
+            <p style="font-size:14px;line-height:1.8;color:#475569;text-align:center">Enter this code on the MwalimuConnect website to continue.</p>
+            <div style="margin-top:28px;padding:15px;background-color:#f8fafc;border-left:4px solid #16a34a">
+              <p style="margin:0;font-size:13px;line-height:1.7;color:#64748b"><strong>Security notice:</strong> This code expires in 10 minutes and can only be used once. Never share it with anyone.</p>
+            </div>
+            <p style="margin-top:24px;font-size:13px;line-height:1.7;color:#64748b">If you did not request this code, you can safely ignore this email.</p>
+          </div>
+          <div style="padding:22px 15px;text-align:center;background-color:#eaf0f8;border-radius:0 0 12px 12px">
+            <p style="margin:0 0 8px;color:#334155;font-size:13px">Thank you for choosing MwalimuConnect.</p>
+            <p style="margin:0;color:#64748b;font-size:12px">Designed and developed by <strong style="color:#123b70">MUTSTECH</strong></p>
+            <p style="margin:12px 0 0;color:#94a3b8;font-size:11px">&copy; MwalimuConnect. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
+    `,
   });
 }
