@@ -565,6 +565,11 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .vacancy-description-field textarea { min-height: 112px; }
 .modal-close { position: absolute; top: 16px; right: 16px; display: grid; width: 31px; height: 31px; place-items: center; color: #718078; border: 0; border-radius: 7px; background: #f5f7f5; }
 .modal-mark { margin-bottom: 20px; }
+.auth-signin-heading { display: flex; align-items: center; gap: 14px; margin: 0 40px 14px 0; }
+.auth-signin-heading .modal-mark { flex: 0 0 auto; margin: 0; }
+.auth-signin-heading .brand-mark { width: 46px; height: 46px; border-radius: 15px 15px 15px 5px; }
+.auth-signin-heading .job-category { display: block; margin-bottom: 5px; }
+.auth-signin-heading h2 { margin: 0; }
 .modal-card h2 { margin: 8px 0; font-family: Manrope, sans-serif; font-size: 23px; letter-spacing: -.7px; }
 .modal-description { margin-bottom: 20px; color: #818c84; font-size: 11px; line-height: 1.7; }
 .modal-form { display: grid; gap: 13px; }

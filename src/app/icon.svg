@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="background" x1="8" y1="5" x2="56" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#23865B"/>
+      <stop offset="1" stop-color="#105E3C"/>
+    </linearGradient>
+    <linearGradient id="pages" x1="15" y1="28" x2="50" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E8F4EA"/>
+    </linearGradient>
+  </defs>
+  <path d="M17 3.5h30A13.5 13.5 0 0 1 60.5 17v30A13.5 13.5 0 0 1 47 60.5H17A13.5 13.5 0 0 1 3.5 47V17A13.5 13.5 0 0 1 17 3.5Z" fill="url(#background)"/>
+  <path d="M32 27.2c-4.9-4.1-10.5-5.3-17-4.2v20.8c6.4-1.1 12.1.2 17 4.2 4.9-4 10.6-5.3 17-4.2V23c-6.5-1.1-12.1.1-17 4.2Z" fill="url(#pages)" stroke="#D7EBDD" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M32 27.3v20.6" stroke="#1B7049" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M21 28.7c2.8.1 5 .8 7.1 2.2M21 34c2.8.1 5 .8 7.1 2.2m14.9-7.5c-2.8.1-5 .8-7.1 2.2M43 34c-2.8.1-5 .8-7.1 2.2" stroke="#A9CDB2" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="m43.4 11.1 1.8 4.1 4.2 1.8-4.2 1.8-1.8 4.1-1.8-4.1-4.2-1.8 4.2-1.8 1.8-4.1Z" fill="#F2D28B"/>
+</svg>

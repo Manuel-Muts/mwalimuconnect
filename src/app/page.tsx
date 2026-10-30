@@ -1747,9 +1747,17 @@ export default function Home() {
     return (
       <>
         <button className="modal-close" onClick={() => { if (!loading) { setModal(null); setLoginChallenge(null); } }} aria-label="Close" disabled={loading}><Icon name="close" size={19} /></button>
-        <div className="modal-mark"><span className="brand-mark"><span /></span></div>
-        <span className="job-category">{loginChallenge ? "EMAIL VERIFICATION" : authMode === "signup" ? "YOUR NEXT CHAPTER" : authMode === "forgot-password" ? "ACCOUNT RECOVERY" : "WELCOME BACK"}</span>
-        <h2 id="modal-heading">{loginChallenge ? "Enter your sign-in code." : authMode === "signup" ? "Join the community." : authMode === "forgot-password" ? "Reset your password." : "Good to see you again."}</h2>
+        {authMode === "signin" && !loginChallenge ? <div className="auth-signin-heading">
+          <div className="modal-mark"><span className="brand-mark"><span /></span></div>
+          <div>
+            <span className="job-category">WELCOME BACK</span>
+            <h2 id="modal-heading">Good to see you again.</h2>
+          </div>
+        </div> : <>
+          <div className="modal-mark"><span className="brand-mark"><span /></span></div>
+          <span className="job-category">{loginChallenge ? "EMAIL VERIFICATION" : authMode === "signup" ? "YOUR NEXT CHAPTER" : "ACCOUNT RECOVERY"}</span>
+          <h2 id="modal-heading">{loginChallenge ? "Enter your sign-in code." : authMode === "signup" ? "Join the community." : "Reset your password."}</h2>
+        </>}
         <p className="modal-description">{loginChallenge ? `Enter the six-digit code sent to ${loginChallenge.email}.` : authMode === "signup" ? "Create a free teacher account to view and apply for opportunities across Kenya." : authMode === "forgot-password" ? "Enter the email address linked to your account. We’ll send you a secure link to choose a new password." : "Sign in with your password. We’ll email you a one-time code to finish signing in."}</p>
         {loginChallenge ? <>
           <form className="modal-form" onSubmit={(event) => { event.preventDefault(); void verifyLoginOtp(loginOtp); }} aria-busy={loading}>
