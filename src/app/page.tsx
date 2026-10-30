@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { getSubCountiesInCounty } from "kenya-locations/sub-counties";
 import { getSupabase } from "@/lib/supabase";
 import { getVacancyLevelsForInstitutionType, INSTITUTION_TYPES, KENYAN_COUNTIES } from "@/lib/school-options";
@@ -2036,7 +2037,10 @@ export default function Home() {
         </section>
       </div>}
 
-      <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.replace(/^My\s+/, "").replace(/^\w/, (letter) => letter.toUpperCase())}</span></button>)}</nav>
+      {typeof document !== "undefined" && createPortal(
+        <nav className="mobile-nav" aria-label="Mobile navigation">{roleInfo[role].nav.map((item) => <button key={item} className={activeNav === item ? "active" : ""} onClick={() => setActiveNav(item)}><Icon name={navIcon(item)} size={19} /><span>{role === "institution" && item === "My vacancies" ? "Vacancies" : item.replace(/^My\s+/, "").replace(/^\w/, (letter) => letter.toUpperCase())}</span></button>)}</nav>,
+        document.body,
+      )}
 
       {modal && <div className="modal-backdrop" onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}>
         <section className={`modal-card${modal === "institution" || modal === "edit-institution" ? " institution-modal-card" : modal === "vacancy" ? " vacancy-modal-card" : modal === "auth" ? ` auth-modal-card${authMode === "signup" && !loginChallenge ? " is-signup" : ""}` : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">
