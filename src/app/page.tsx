@@ -1769,6 +1769,8 @@ export default function Home() {
     ? activeNav === "My applications" ? "Your applications" : activeNav === "My CV" ? "Your professional CV" : activeNav === "Saved jobs" ? "Saved opportunities" : activeNav === "Subscription" ? "Your full access" : "Opportunities made for you"
     : role === "institution" ? activeNav === "Subscription" ? "Your school subscription" : activeNav === "Applications" ? "Applications" : activeNav === "My vacancies" ? "Your vacancies" : "Welcome to your workspace"
       : activeNav === "Institutions" ? "Institutions across Kenya" : activeNav === "Subscriptions" ? "Subscription overview" : activeNav === "Vacancies" ? "Vacancy oversight" : "A clearer view of the platform";
+  const welcomeNameParts = userName.trim().split(/\s+/).filter(Boolean);
+  const welcomeName = welcomeNameParts.length > 1 ? welcomeNameParts[1] : welcomeNameParts[0] || "there";
   const institutionPageCount = Math.max(1, Math.ceil(institutionTotalCount / 10));
   const adminActiveVacancies = useMemo(
     () => vacancies
@@ -1942,7 +1944,7 @@ export default function Home() {
   return (
     <>
       <header className="topbar">
-        <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{role === "institution" && activeNav === "My vacancies" ? "Vacancies" : activeNav}</strong></div>
+        <div className="breadcrumb"><span>{roleInfo[role].name} workspace</span><span className="crumb-slash">/</span><strong>{role === "institution" && activeNav === "My vacancies" ? "Vacancies" : activeNav}</strong></div>
         <div className="topbar-actions">
           <span className="connection-pill connected"><i />Secure workspace</span>
           <button className="icon-button notification-button" aria-label="Notifications"><Icon name="bell" size={19} /></button>
@@ -1970,7 +1972,7 @@ export default function Home() {
           <span className="brand-mark"><span /></span>
           <span className="brand-name">mwalimu<span>connect</span></span>
         </a>
-        <div className="workspace-label">WORKSPACE</div>
+        <div className="workspace-label">{roleInfo[role].name.toUpperCase()} WORKSPACE</div>
         <nav className="side-nav" aria-label="Main navigation">
           {roleInfo[role].nav.map((item) => {
             const label = role === "teacher" && item === "Discover"
@@ -1998,7 +2000,7 @@ export default function Home() {
         <div className="page-content">
           <div className="welcome-row">
             <div>
-              <p className="welcome-greeting">👋 Welcome back, {userName || "there"}.</p>
+              <p className="welcome-greeting">👋 Welcome back, {welcomeName}.</p>
               <div className="eyebrow"><span className="eyebrow-dot" /> KENYA&apos;S EDUCATION COMMUNITY</div>
               <h1>{heading}<span className="title-period">.</span></h1>
               <p className="page-subtitle">{role === "teacher" ? "A meaningful role can change everything. Let’s find yours." : role === "institution" ? "Find the right people to help your learners flourish." : "Helping great schools and great educators find each other."}</p>
