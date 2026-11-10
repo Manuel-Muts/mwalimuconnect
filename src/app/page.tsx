@@ -254,6 +254,8 @@ export default function Home() {
   const [notice, setNoticeMessage] = useState("");
   const [noticeType, setNoticeType] = useState<"success" | "error">("success");
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const authBusy = loading || passkeyLoading;
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
@@ -931,6 +933,7 @@ export default function Home() {
   }
   async function submitAuth(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (authBusy) return;
     setLoading(true);
     setAuthFeedback(null);
     setNotice("");
@@ -1001,7 +1004,7 @@ export default function Home() {
   }
 
   async function signInWithPasskey() {
-    if (loading) return;
+    if (authBusy) return;
     const unsupportedReason = passkeyBrowserError();
     if (unsupportedReason) {
       setAuthFeedback({ type: "error", message: unsupportedReason });
@@ -1013,7 +1016,7 @@ export default function Home() {
       return;
     }
 
-    setLoading(true);
+    setPasskeyLoading(true);
     setAuthFeedback(null);
     try {
       const { error } = await supabase.auth.signInWithPasskey();
@@ -1029,7 +1032,7 @@ export default function Home() {
           : `Could not sign in with a passkey: ${error instanceof Error ? error.message : "Please try again."}`,
       });
     } finally {
-      setLoading(false);
+      setPasskeyLoading(false);
     }
   }
 
@@ -1777,7 +1780,7 @@ export default function Home() {
   function authForm() {
     return (
       <>
-        <button className="modal-close" onClick={() => { if (!loading) { setModal(null); setLoginChallenge(null); } }} aria-label="Close" disabled={loading}><Icon name="close" size={19} /></button>
+        <button className="modal-close" onClick={() => { if (!authBusy) { setModal(null); setLoginChallenge(null); } }} aria-label="Close" disabled={authBusy}><Icon name="close" size={19} /></button>
         {authMode === "signin" && !loginChallenge ? <div className="auth-signin-heading">
           <div className="modal-mark"><span className="brand-mark"><span /></span></div>
           <div>
@@ -1831,13 +1834,13 @@ export default function Home() {
           </form>
           <p className="switch-auth">Remembered your password? <button disabled={loading} onClick={() => { setAuthMode("signin"); setAuthFeedback(null); }}>Back to sign in</button></p>
         </> : <>
-          <form className={`modal-form${authMode === "signup" ? " auth-signup-form" : ""}`} onSubmit={(event) => void submitAuth(event)} aria-busy={loading}>
-            {authMode === "signup" && <label>Full name<input name="full_name" placeholder="Your full name" autoComplete="name" required disabled={loading} /></label>}
-            {authMode === "signup" && <label>Your county<select name="county" defaultValue="" required disabled={loading}><option value="" disabled>Select your county</option>{KENYAN_COUNTIES.map((countyName) => <option key={countyName} value={countyName}>{countyName}</option>)}</select></label>}
-            <label>Email address<input name="email" type="email" placeholder="you@example.com" autoComplete="email" required disabled={loading} /></label>
-            <label>Password<span className="password-input-wrap"><input id="auth-password" name="password" type={showAuthPassword ? "text" : "password"} placeholder="At least 8 characters" minLength={8} autoComplete={authMode === "signup" ? "new-password" : "current-password"} required disabled={loading} /><button className="password-visibility-toggle" type="button" aria-label={showAuthPassword ? "Hide password" : "Show password"} aria-pressed={showAuthPassword} aria-controls="auth-password" onClick={() => setShowAuthPassword((visible) => !visible)}><Icon name={showAuthPassword ? "eyeOff" : "eye"} size={17} /></button></span></label>
-            {authMode === "signin" && <button className="forgot-password-link" type="button" disabled={loading} onClick={() => { setAuthMode("forgot-password"); setAuthFeedback(null); }}>Forgot password?</button>}
-            <button className="primary-button modal-submit" disabled={loading}>
+          <form className={`modal-form${authMode === "signup" ? " auth-signup-form" : ""}`} onSubmit={(event) => void submitAuth(event)} aria-busy={authBusy}>
+            {authMode === "signup" && <label>Full name<input name="full_name" placeholder="Your full name" autoComplete="name" required disabled={authBusy} /></label>}
+            {authMode === "signup" && <label>Your county<select name="county" defaultValue="" required disabled={authBusy}><option value="" disabled>Select your county</option>{KENYAN_COUNTIES.map((countyName) => <option key={countyName} value={countyName}>{countyName}</option>)}</select></label>}
+            <label>Email address<input name="email" type="email" placeholder="you@example.com" autoComplete="email" required disabled={authBusy} /></label>
+            <label>Password<span className="password-input-wrap"><input id="auth-password" name="password" type={showAuthPassword ? "text" : "password"} placeholder="At least 8 characters" minLength={8} autoComplete={authMode === "signup" ? "new-password" : "current-password"} required disabled={authBusy} /><button className="password-visibility-toggle" type="button" aria-label={showAuthPassword ? "Hide password" : "Show password"} aria-pressed={showAuthPassword} aria-controls="auth-password" onClick={() => setShowAuthPassword((visible) => !visible)}><Icon name={showAuthPassword ? "eyeOff" : "eye"} size={17} /></button></span></label>
+            {authMode === "signin" && <button className="forgot-password-link" type="button" disabled={authBusy} onClick={() => { setAuthMode("forgot-password"); setAuthFeedback(null); }}>Forgot password?</button>}
+            <button className="primary-button modal-submit" disabled={authBusy}>
               {loading && <span className="button-spinner" aria-hidden="true" />}
               {loading ? "Please wait…" : authMode === "signup" ? "Create teacher account" : "Sign in"}
               {!loading && <Icon name="arrow" size={15} />}
@@ -1845,12 +1848,12 @@ export default function Home() {
           </form>
           {authMode === "signin" && <div className="passkey-signin">
             <span className="passkey-divider">or</span>
-            <button className="outline-button passkey-signin-button" type="button" onClick={() => void signInWithPasskey()} disabled={loading}>
-              {loading ? <span className="button-spinner" aria-hidden="true" /> : <Icon name="passkey" size={16} />}
+            <button className="outline-button passkey-signin-button" type="button" onClick={() => void signInWithPasskey()} disabled={authBusy}>
+              {passkeyLoading ? <span className="button-spinner" aria-hidden="true" /> : <Icon name="passkey" size={16} />}
               Sign in with a passkey
             </button>
           </div>}
-          <p className="switch-auth">{authMode === "signup" ? "Already have an account?" : "New to MwalimuConnect?"} <button disabled={loading} onClick={() => { setAuthMode(authMode === "signup" ? "signin" : "signup"); setAuthFeedback(null); setLoginChallenge(null); }}>{authMode === "signup" ? "Sign in" : "Create account"}</button></p>
+          <p className="switch-auth">{authMode === "signup" ? "Already have an account?" : "New to MwalimuConnect?"} <button disabled={authBusy} onClick={() => { setAuthMode(authMode === "signup" ? "signin" : "signup"); setAuthFeedback(null); setLoginChallenge(null); }}>{authMode === "signup" ? "Sign in" : "Create account"}</button></p>
         </>}
       </>
     );
