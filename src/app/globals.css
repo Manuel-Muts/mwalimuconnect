@@ -326,11 +326,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .subscription-plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .subscription-plan { display: grid; align-content: start; justify-items: start; gap: 10px; padding: 16px; border: 1px solid #e6ece6; border-radius: 9px; background: #fff; }
 .subscription-plan.is-unconfigured { background: #fafbfa; }
+.subscription-plan.is-placeholder { border-color: #e2ebe2; background: linear-gradient(145deg, #fff, #f8fbf7); }
 .subscription-plan-price { color: #2e4938; font-family: Manrope, sans-serif; font-size: 16px; }
+.subscription-plan-placeholder-label { padding: 4px 7px; color: #57745e; border: 1px solid #e3ede1; border-radius: 999px; background: #eff6ed; font-size: 8px; font-weight: 600; }
 .subscription-plan-duration { color: #88938b; font-size: 9px; }
 .subscription-plan .primary-button { width: 100%; margin-top: 3px; }
 .subscription-plan .primary-button:disabled { cursor: not-allowed; opacity: .58; }
 .empty-plan-message, .subscription-current-access { color: #77847a; font-size: 10px; }
+.subscription-placeholder-note { margin: 12px 0 0; color: #7d897e; font-size: 9px; line-height: 1.5; }
 .subscription-current-access { margin: 14px 0 0; }
 .selected-plan-summary { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 12px; border: 1px solid #e6ece6; border-radius: 7px; background: #f8faf8; color: #395342; font-size: 11px; }
 .welcome-row { display: flex; min-width: 0; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 23px; }
@@ -498,7 +501,7 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .applicant-table { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; text-align: left; }
 .applicant-table th { padding: 12px 15px; color: #77847a; background: #f7f9f7; font-size: 9px; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; white-space: nowrap; }
 .applicant-table td { padding: 14px 15px; border-top: 1px solid #edf0ed; color: #657369; font-size: 10px; vertical-align: middle; }
-.applicant-table tbody tr:not(.applicant-details-row):hover { background: #fbfcfa; }
+.applicant-table tbody tr:hover { background: #fbfcfa; }
 .applicant-table-name { display: grid; gap: 4px; }
 .applicant-table-name span { color: #728477; font-size: 8px; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; }
 .applicant-table-name strong { color: #2f4938; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 700; }
@@ -506,11 +509,27 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .applicant-table-contact a { max-width: 210px; overflow: hidden; color: #28784e; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .applicant-table-contact a:hover { text-decoration: underline; }
 .applicant-cv-button { min-height: 31px; flex: 0 0 auto; padding: 0 10px; font-size: 9px; white-space: nowrap; }
-.applicant-details-row td { padding: 17px 19px 19px; background: #f8faf8; }
 .applicant-cv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; margin-top: 14px; }
-.applicant-details-row .applicant-cv-grid { margin-top: 0; }
 .applicant-cv-grid strong { color: #526158; font-size: 9px; }
 .applicant-cv-grid p { margin: 5px 0 0; color: #718078; font-size: 10px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.applicant-cv-backdrop { position: fixed; inset: 0; z-index: 1100; display: grid; overflow-y: auto; place-items: center; padding: 24px; background: #10251dcc; backdrop-filter: blur(4px); }
+.applicant-cv-modal { position: relative; width: min(100%, 820px); max-height: min(880px, calc(100vh - 48px)); overflow-y: auto; overscroll-behavior: contain; padding: 34px 38px; border: 1px solid #e3ebe3; border-radius: 16px; background: #fff; box-shadow: 0 24px 80px #10251d40; }
+.applicant-cv-close { position: absolute; top: 16px; right: 16px; display: grid; width: 34px; height: 34px; place-items: center; color: #718078; border: 0; border-radius: 8px; background: #f3f6f3; }
+.applicant-cv-close:hover { color: #28784e; background: #eaf3eb; }
+.applicant-cv-modal-header { display: grid; gap: 7px; padding: 2px 48px 20px 0; border-bottom: 1px solid #edf0ed; }
+.applicant-cv-modal-header h2 { margin: 0; color: #2f4938; font-family: Manrope, sans-serif; font-size: 24px; letter-spacing: -.6px; overflow-wrap: anywhere; }
+.applicant-cv-modal-header > p { margin: 0; color: #77847a; font-size: 12px; }
+.applicant-cv-opportunity { color: #397750; font-size: 10px; font-weight: 600; overflow-wrap: anywhere; }
+.applicant-cv-modal-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; padding: 19px 0; border-bottom: 1px solid #edf0ed; }
+.applicant-cv-modal-meta > div { display: grid; min-width: 0; gap: 5px; }
+.applicant-cv-modal-meta span { color: #849087; font-size: 9px; font-weight: 600; }
+.applicant-cv-modal-meta strong, .applicant-cv-modal-meta a { color: #435749; font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }
+.applicant-cv-modal-meta a { color: #28784e; text-decoration: none; }
+.applicant-cv-modal-meta a:hover { text-decoration: underline; }
+.applicant-cv-modal-grid { gap: 18px 24px; margin-top: 20px; }
+.applicant-cv-modal-grid > div { min-width: 0; padding: 15px; border: 1px solid #e9eee9; border-radius: 9px; background: #fafcfa; }
+.applicant-cv-modal-grid strong { color: #435749; font-size: 10px; }
+.applicant-cv-modal-grid p { margin-top: 7px; font-size: 11px; line-height: 1.7; }
 .applicant-list .no-vacancies { margin: 0; }
 .role-panel-head { display: flex; align-items: flex-start; gap: 17px; }
 .role-panel-head > div:last-child { min-width: 0; }
@@ -794,6 +813,22 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .mobile-nav button.active svg { stroke-width: 2.1; }
   .opportunity-desktop-table { display: none; }
   .opportunity-mobile-list { display: grid; min-width: 0; gap: 9px; }
+  .institution-applications, .institution-applications > * { min-width: 0; }
+  .institution-applications .applicant-vacancy-picker select { min-width: 0; max-width: 100%; }
+  .institution-applications .applicant-list-heading > div { min-width: 0; }
+  .institution-applications .applicant-list-heading h3 { overflow-wrap: anywhere; }
+  .institution-applications .applicant-table-wrap { max-width: 100%; }
+  .applicant-cv-backdrop { padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); }
+  .applicant-cv-modal { width: 100%; max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 25px 20px; border-radius: 14px; }
+  .applicant-cv-close { top: 13px; right: 13px; width: 32px; height: 32px; }
+  .applicant-cv-modal-header { gap: 6px; padding: 3px 35px 16px 0; }
+  .applicant-cv-modal-header h2 { font-size: 20px; }
+  .applicant-cv-modal-header > p { font-size: 11px; }
+  .applicant-cv-modal-meta { gap: 12px; padding: 16px 0; }
+  .applicant-cv-modal-meta strong, .applicant-cv-modal-meta a { font-size: 10px; }
+  .applicant-cv-modal-grid { grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+  .applicant-cv-modal-grid > div { padding: 12px; }
+  .applicant-cv-modal-grid p { font-size: 10px; }
   .modal-backdrop { z-index: 60; }
   .auth-toast { top: max(12px, env(safe-area-inset-top)); z-index: 80; width: calc(100% - max(24px, env(safe-area-inset-left)) - max(24px, env(safe-area-inset-right))); padding: 13px 15px; font-size: 12px; }
   .notification-button { width: 28px; }

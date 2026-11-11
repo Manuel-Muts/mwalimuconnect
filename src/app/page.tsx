@@ -77,7 +77,7 @@ type PasskeyListItem = {
 };
 type UserNotification = {
   id: string;
-  notification_type: "subscription_expiry" | "new_vacancy";
+  notification_type: "subscription_expiry" | "new_vacancy" | "application_received";
   title: string;
   message: string;
   vacancy_id: string | null;
@@ -85,6 +85,17 @@ type UserNotification = {
   read_at: string | null;
 };
 const passkeyInvitationIntervalMs = 30 * 24 * 60 * 60 * 1000;
+const teacherSuggestedPrices: Record<SubscriptionPlanKey, number> = {
+  weekly: 100,
+  monthly: 350,
+  termly: 600,
+  yearly: 1450,
+};
+const institutionSuggestedPrices: Record<Exclude<SubscriptionPlanKey, "weekly">, number> = {
+  monthly: 2000,
+  termly: 5500,
+  yearly: 13500,
+};
 
 const emptyTeacherCv: TeacherCv = {
   full_name: "",
@@ -243,7 +254,7 @@ export default function Home() {
   const [institutionsRefreshKey, setInstitutionsRefreshKey] = useState(0);
   const [institutionPage, setInstitutionPage] = useState(1);
   const institutionPageCache = useRef(new Map<number, InstitutionPageCacheEntry>());
-  const [expandedApplicantId, setExpandedApplicantId] = useState("");
+  const [selectedApplicantId, setSelectedApplicantId] = useState("");
   const [modal, setModal] = useState<"auth" | "subscription" | "institution" | "edit-institution" | "delete-institution" | "vacancy" | "profile" | null>(null);
   const [institutionRegistrationError, setInstitutionRegistrationError] = useState("");
   const [editingInstitution, setEditingInstitution] = useState<RegisteredInstitution | null>(null);
@@ -285,6 +296,8 @@ export default function Home() {
   const emailConfirmationHandled = useRef(false);
   const [backendConnected, setBackendConnected] = useState(false);
   const [, setNairobiDateTick] = useState(0);
+  const [authInitializing, setAuthInitializing] = useState(true);
+  const workspaceUserId = useRef("");
   const [teacherId, setTeacherId] = useState("");
   const [teacherHasAccess, setTeacherHasAccess] = useState(false);
   const [teacherSubscriptionExpiresAt, setTeacherSubscriptionExpiresAt] = useState<string | null>(null);
@@ -315,6 +328,22 @@ export default function Home() {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [selectedVacancy]);
+
+  const selectedApplicant = institutionApplicants.find((applicant) => applicant.id === selectedApplicantId) ?? null;
+
+  useEffect(() => {
+    if (!selectedApplicant) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedApplicantId("");
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [selectedApplicant]);
 
   useEffect(() => {
     if (!loginChallenge || loading || loginOtp !== "") return;
@@ -347,6 +376,16 @@ export default function Home() {
       return;
     }
 
+    const notificationTypes: UserNotification["notification_type"][] = role === "teacher"
+      ? ["new_vacancy", "subscription_expiry"]
+      : role === "institution" ? ["application_received", "subscription_expiry"] : [];
+    if (notificationTypes.length === 0) {
+      setNotifications([]);
+      setUnreadNotificationCount(0);
+      setNotificationsError("");
+      return;
+    }
+
     setNotificationsLoading(true);
     setNotificationsError("");
     try {
@@ -354,11 +393,13 @@ export default function Home() {
         supabase
           .from("notifications")
           .select("id,notification_type,title,message,vacancy_id,created_at,read_at")
+          .in("notification_type", notificationTypes)
           .order("created_at", { ascending: false })
           .limit(30),
         supabase
           .from("notifications")
           .select("id", { count: "exact", head: true })
+          .in("notification_type", notificationTypes)
           .is("read_at", null),
       ]);
       const queryError = listResult.error?.message ?? unreadResult.error?.message;
@@ -371,7 +412,7 @@ export default function Home() {
     } finally {
       setNotificationsLoading(false);
     }
-  }, []);
+  }, [role]);
 
   async function openNotification(notification: UserNotification) {
     const supabase = getSupabase();
@@ -393,11 +434,16 @@ export default function Home() {
       setUnreadNotificationCount((count) => Math.max(0, count - 1));
     }
     setNotificationPanelOpen(false);
-    if (notification.notification_type === "new_vacancy" && notification.vacancy_id) {
+    if (notification.notification_type === "new_vacancy") {
       setActiveNav("Discover");
-      const vacancy = vacancies.find((item) => item.id === notification.vacancy_id);
-      if (vacancy) setSelectedVacancy(vacancy);
-      else setVacanciesRefreshKey((key) => key + 1);
+      if (notification.vacancy_id) {
+        const vacancy = vacancies.find((item) => item.id === notification.vacancy_id);
+        if (vacancy) setSelectedVacancy(vacancy);
+        else setVacanciesRefreshKey((key) => key + 1);
+      }
+    } else if (notification.notification_type === "application_received") {
+      if (notification.vacancy_id) setSelectedInstitutionVacancyId(notification.vacancy_id);
+      setActiveNav("Applications");
     } else {
       setActiveNav("Subscription");
     }
@@ -422,13 +468,15 @@ export default function Home() {
 
   useEffect(() => {
     const supabase = getSupabase();
-    if (!supabase) return;
+    if (!supabase) {
+      setAuthInitializing(false);
+      return;
+    }
     const client = supabase;
     setBackendConnected(true);
     let active = true;
 
     async function loadAccount(user: { id: string; email?: string; user_metadata?: { full_name?: string } }) {
-      setEnteredWorkspace(false);
       setWorkspaceLoading(true);
       if (new URLSearchParams(window.location.search).get("email_confirmed") === "1") {
         setWorkspaceLoading(false);
@@ -625,6 +673,7 @@ export default function Home() {
           }
         }
         setUserEmail(user.email ?? "");
+        workspaceUserId.current = user.id;
         setEnteredWorkspace(true);
         setWorkspaceLoading(false);
       } catch (error) {
@@ -638,6 +687,7 @@ export default function Home() {
 
     const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
       if (!active) return;
+      setAuthInitializing(false);
       const isRecoveryCallback = event === "PASSWORD_RECOVERY"
         || (event === "INITIAL_SESSION" && new URLSearchParams(window.location.search).get("reset_password") === "1");
       if (session?.user && isRecoveryCallback) {
@@ -648,9 +698,16 @@ export default function Home() {
         return;
       }
       if (session?.user) {
+        if (workspaceUserId.current === session.user.id) return;
+        if (workspaceUserId.current) {
+          workspaceUserId.current = "";
+          setEnteredWorkspace(false);
+        }
+        setWorkspaceLoading(true);
         setUserEmail(session.user.email ?? "");
         window.setTimeout(() => void loadAccount(session.user), 0);
       } else {
+        workspaceUserId.current = "";
         setWorkspaceLoading(false);
         const searchParams = new URLSearchParams(window.location.search);
         const invalidInvitationLink = searchParams.get("setup") === "password";
@@ -862,7 +919,7 @@ export default function Home() {
     setApplicantsLoading(true);
     setInstitutionApplicants([]);
     setInstitutionActiveVacancies([]);
-    setExpandedApplicantId("");
+    setSelectedApplicantId("");
     void (async () => {
       const { data: vacancies, error: vacancyError } = await supabase
         .from("vacancies")
@@ -998,14 +1055,23 @@ export default function Home() {
   const subscriptionPlanOptions = <section className="subscription-plans" aria-label="Subscription plans">
     <div className="section-heading"><div><h2>{role === "teacher" ? "Unlock nationwide opportunities" : "Choose your school subscription"}</h2><p>{role === "teacher" ? "Get full access to vacancies across Kenya." : "Keep your school's vacancies active and visible to teachers."}</p></div></div>
     <div className="subscription-plan-grid">
-      {subscriptionPlans.filter((plan) => role === "teacher" || plan.key !== "weekly").map((plan) => <article className={`subscription-plan ${plan.amountKes === null ? "is-unconfigured" : ""}`} key={plan.key}>
-        <span className="job-category">{plan.name.toUpperCase()}</span>
-        <strong className="subscription-plan-price">{plan.amountKes === null ? "Price coming soon" : `KES ${plan.amountKes.toLocaleString()}`}</strong>
-        <span className="subscription-plan-duration">{plan.durationDays} days of full access</span>
-        <button className="primary-button" disabled={plan.amountKes === null || loading} onClick={() => { setSelectedPlan(plan.key); setModal("subscription"); }}>{plan.amountKes === null ? "Not available yet" : "Choose plan"} <Icon name="arrow" size={15} /></button>
-      </article>)}
+      {subscriptionPlans.filter((plan) => role === "teacher" || plan.key !== "weekly").map((plan) => {
+        const suggestedPrice = role === "teacher"
+          ? teacherSuggestedPrices[plan.key]
+          : plan.key === "weekly" ? null : institutionSuggestedPrices[plan.key];
+        const displayPrice = plan.amountKes ?? suggestedPrice;
+        const isPlaceholder = plan.amountKes === null && suggestedPrice !== null;
+        return <article className={`subscription-plan ${plan.amountKes === null ? "is-unconfigured" : ""}${isPlaceholder ? " is-placeholder" : ""}`} key={plan.key}>
+          <span className="job-category">{plan.name.toUpperCase()}</span>
+          <strong className="subscription-plan-price">{displayPrice === null ? "Price coming soon" : `KES ${displayPrice.toLocaleString()}`}</strong>
+          {isPlaceholder && <span className="subscription-plan-placeholder-label">Suggested placeholder price</span>}
+          <span className="subscription-plan-duration">{plan.durationDays} days of full access</span>
+          <button className="primary-button" disabled={plan.amountKes === null || loading} onClick={() => { setSelectedPlan(plan.key); setModal("subscription"); }}>{plan.amountKes === null ? "Payments coming soon" : "Choose plan"} {plan.amountKes !== null && <Icon name="arrow" size={15} />}</button>
+        </article>;
+      })}
       {subscriptionPlans.length === 0 && <p className="empty-plan-message">Subscription plans could not be loaded. Please try again later.</p>}
     </div>
+    {subscriptionPlans.some((plan) => plan.amountKes === null) && <p className="subscription-placeholder-note">Suggested prices are placeholders only. Payments are not enabled for these plans yet.</p>}
     {accountHasFullAccess && accountSubscriptionExpiresAt && <p className="subscription-current-access">Your current full access is active through {new Date(accountSubscriptionExpiresAt).toLocaleDateString()}.</p>}
   </section>;
   let emptyVacancyTitle = "No opportunities match your search.";
@@ -1964,6 +2030,9 @@ export default function Home() {
   }
 
   if (!enteredWorkspace) {
+    if (authInitializing || workspaceLoading) {
+      return <div className="auth-loading" role="status">Loading your secure workspace…</div>;
+    }
     if (passwordRecoveryRequired) {
       return (
         <div className="modal-backdrop">
@@ -2074,7 +2143,7 @@ export default function Home() {
               {notificationsLoading && notifications.length === 0
                 ? <p className="notification-panel-empty" role="status">Loading notifications…</p>
                 : notifications.length === 0
-                  ? <p className="notification-panel-empty">New vacancy and subscription reminders will appear here.</p>
+                  ? <p className="notification-panel-empty">{role === "teacher" ? "New vacancies and subscription reminders will appear here." : role === "institution" ? "New applications and subscription reminders will appear here." : "Notifications will appear here."}</p>
                   : <div className="notification-list">
                     {notifications.map((notification) => (
                       <button
@@ -2283,8 +2352,8 @@ export default function Home() {
             <div className="role-panel-head"><div className="panel-icon"><Icon name={activeNav === "Subscription" ? "subscription" : activeNav === "Applications" ? "applicants" : "vacancies"} size={22} /></div><div><span className="job-category">SCHOOL WORKSPACE</span><h2>{activeNav === "Subscription" ? "Connect your school to opportunity." : activeNav === "Applications" ? "Review applications." : "The right educator changes everything."}</h2><p>{activeNav === "Subscription" ? "Activate a subscription to keep your school’s opportunities visible to teachers." : activeNav === "Applications" ? "Review applicants for any of your active vacancies." : "Post a vacancy and help talented educators find their way to your school."}</p></div></div>
             {activeNav !== "Subscription" && <div className="institution-levels"><strong>{schoolLevel || "Institution type"}</strong><span>Teaching levels: {getVacancyLevelsForInstitutionType(schoolLevel).join(" · ") || "Not configured"}</span></div>}
             {activeNav === "Subscription" ? subscriptionPlanOptions : <div className="role-actions"><button className="primary-button" onClick={() => activeNav === "My vacancies" && !institutionCanPublish ? setActiveNav("Subscription") : activeNav === "Applications" ? setActiveNav("My vacancies") : setModal("vacancy")}>{activeNav === "My vacancies" && !institutionCanPublish ? "Subscribe with M-Pesa" : activeNav === "Applications" ? "View vacancies" : "Post a vacancy"} <Icon name="arrow" size={15} /></button><button className="outline-button" onClick={() => setActiveNav("Subscription")}>Manage subscription</button></div>}
-            {activeNav === "Applications" && <div className="applicant-list">
-              {institutionActiveVacancies.length > 0 && <label className="applicant-vacancy-picker">Active vacancy<select value={selectedInstitutionVacancyId} onChange={(event) => { setSelectedInstitutionVacancyId(event.target.value); setExpandedApplicantId(""); }}>{institutionActiveVacancies.map((vacancy) => <option key={vacancy.id} value={vacancy.id}>{vacancy.title} · Apply by {formatNairobiDate(vacancy.applicationDeadline)}</option>)}</select></label>}
+            {activeNav === "Applications" && <div className="applicant-list institution-applications">
+              {institutionActiveVacancies.length > 0 && <label className="applicant-vacancy-picker">Active vacancy<select value={selectedInstitutionVacancyId} onChange={(event) => { setSelectedInstitutionVacancyId(event.target.value); setSelectedApplicantId(""); }}>{institutionActiveVacancies.map((vacancy) => <option key={vacancy.id} value={vacancy.id}>{vacancy.title} · Apply by {formatNairobiDate(vacancy.applicationDeadline)}</option>)}</select></label>}
               <div className="applicant-list-heading"><div><span className="job-category">ACTIVE OPPORTUNITY</span><h3>{selectedInstitutionVacancy?.title ?? "No active vacancies"}</h3></div>{selectedInstitutionVacancy && <span className="status-badge">{selectedInstitutionApplicants.length} {selectedInstitutionApplicants.length === 1 ? "application" : "applications"}</span>}</div>
               {selectedInstitutionVacancy && <p className="applicant-sort-note">Showing applications for this vacancy, with the earliest applications first.</p>}
               {applicantsLoading && <p className="no-vacancies">Loading applications…</p>}
@@ -2293,23 +2362,16 @@ export default function Home() {
               {selectedInstitutionApplicants.length > 0 && <div className="applicant-table-wrap">
                 <table className="applicant-table">
                   <thead><tr><th scope="col">Applicant</th><th scope="col">Contact</th><th scope="col">Experience</th><th scope="col">Applied</th><th scope="col"><span className="visually-hidden">CV details</span></th></tr></thead>
-                  <tbody>{selectedInstitutionApplicants.map((applicant) => <Fragment key={applicant.id}>
-                    <tr>
+                  <tbody>{selectedInstitutionApplicants.map((applicant) => (
+                    <tr key={applicant.id}>
                       <td><div className="applicant-table-name"><span>{applicant.cv.professional_title || "TEACHER APPLICANT"}</span><strong>{applicant.cv.full_name}</strong></div></td>
                       <td><div className="applicant-table-contact"><a href={`mailto:${applicant.cv.email}`}>{applicant.cv.email}</a>{applicant.cv.phone && <a href={`tel:${applicant.cv.phone}`}>{applicant.cv.phone}</a>}</div></td>
                       <td>{applicant.cv.years_experience} years</td>
                       <td>{new Date(applicant.appliedAt).toLocaleString()}</td>
-                      <td><button className="outline-button applicant-cv-button" aria-expanded={expandedApplicantId === applicant.id} aria-controls={`applicant-cv-${applicant.id}`} onClick={() => setExpandedApplicantId((current) => current === applicant.id ? "" : applicant.id)}>{expandedApplicantId === applicant.id ? "Hide CV" : "View CV"}</button></td>
+                      <td><button className="outline-button applicant-cv-button" aria-haspopup="dialog" aria-label={`View CV for ${applicant.cv.full_name}`} onClick={() => setSelectedApplicantId(applicant.id)}>View CV</button></td>
                     </tr>
-                    {expandedApplicantId === applicant.id && <tr className="applicant-details-row" id={`applicant-cv-${applicant.id}`}><td colSpan={5}>
-                      <div className="applicant-cv-grid">
-                        <div><strong>Education & qualifications</strong><p>{applicant.cv.education || "Not provided"}</p></div>
-                        <div><strong>Teaching & work experience</strong><p>{applicant.cv.experience || "Not provided"}</p></div>
-                        <div><strong>Skills</strong><p>{applicant.cv.skills || "Not provided"}</p></div>
-                        <div><strong>Why they are the right candidate</strong><p>{applicant.cv.candidate_statement || "Not provided"}</p></div>
-                      </div>
-                    </td></tr>}
-                  </Fragment>)}</tbody>
+                  ))}
+                  </tbody>
                 </table>
               </div>}
             </div>}
@@ -2395,6 +2457,30 @@ export default function Home() {
       </section>
 
     </main>
+
+      {selectedApplicant && <div className="applicant-cv-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedApplicantId(""); }}>
+        <section className="applicant-cv-modal" role="dialog" aria-modal="true" aria-labelledby="applicant-cv-title">
+          <button className="applicant-cv-close" autoFocus onClick={() => setSelectedApplicantId("")} aria-label="Close applicant CV"><Icon name="close" size={19} /></button>
+          <header className="applicant-cv-modal-header">
+            <span className="job-category">TEACHER APPLICATION</span>
+            <h2 id="applicant-cv-title">{selectedApplicant.cv.full_name}</h2>
+            <p>{selectedApplicant.cv.professional_title || "Teacher applicant"}</p>
+            <span className="applicant-cv-opportunity">{selectedApplicant.vacancyTitle}</span>
+          </header>
+          <div className="applicant-cv-modal-meta">
+            <div><span>Experience</span><strong>{selectedApplicant.cv.years_experience} years</strong></div>
+            <div><span>Applied</span><strong>{new Date(selectedApplicant.appliedAt).toLocaleString()}</strong></div>
+            <div><span>Email</span><a href={`mailto:${selectedApplicant.cv.email}`}>{selectedApplicant.cv.email}</a></div>
+            {selectedApplicant.cv.phone && <div><span>Phone</span><a href={`tel:${selectedApplicant.cv.phone}`}>{selectedApplicant.cv.phone}</a></div>}
+          </div>
+          <div className="applicant-cv-grid applicant-cv-modal-grid">
+            <div><strong>Education & qualifications</strong><p>{selectedApplicant.cv.education || "Not provided"}</p></div>
+            <div><strong>Teaching & work experience</strong><p>{selectedApplicant.cv.experience || "Not provided"}</p></div>
+            <div><strong>Skills</strong><p>{selectedApplicant.cv.skills || "Not provided"}</p></div>
+            <div><strong>Why they are the right candidate</strong><p>{selectedApplicant.cv.candidate_statement || "Not provided"}</p></div>
+          </div>
+        </section>
+      </div>}
 
       {selectedVacancy && <div className="vacancy-details-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedVacancy(null); }}>
         <section className="vacancy-details-modal" role="dialog" aria-modal="true" aria-labelledby="selected-opportunity-title">
