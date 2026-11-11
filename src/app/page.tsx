@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getSubCountiesInCounty } from "kenya-locations/sub-counties";
 import { getSupabase } from "@/lib/supabase";
@@ -74,6 +74,15 @@ type PasskeyListItem = {
   friendly_name?: string;
   created_at: string;
   last_used_at?: string;
+};
+type UserNotification = {
+  id: string;
+  notification_type: "subscription_expiry" | "new_vacancy";
+  title: string;
+  message: string;
+  vacancy_id: string | null;
+  created_at: string;
+  read_at: string | null;
 };
 const passkeyInvitationIntervalMs = 30 * 24 * 60 * 60 * 1000;
 
@@ -161,6 +170,14 @@ function formatNairobiDate(dateString: string) {
     .format(new Date(`${dateString}T00:00:00Z`));
 }
 
+function formatNotificationTime(dateString: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Nairobi",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(dateString));
+}
+
 function isVacancyOpen(applicationDeadline: string) {
   return applicationDeadline >= nairobiDateString();
 }
@@ -233,6 +250,11 @@ export default function Home() {
   const [deletingInstitution, setDeletingInstitution] = useState<RegisteredInstitution | null>(null);
   const [editInstitutionSubcounty, setEditInstitutionSubcounty] = useState("");
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
   const [authMode, setAuthMode] = useState<"signup" | "signin" | "forgot-password">("signup");
   const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [showInvitationPassword, setShowInvitationPassword] = useState(false);
@@ -317,6 +339,81 @@ export default function Home() {
     const successMessage = /^(Your password is set\.|Your password has been reset\.|Your county has been saved\.|Your CV has been updated\.|Your CV is saved|Application submitted successfully|STK push sent\.|Institution registered\.|Institution details updated\.|Institution and linked head account deleted\.|Your vacancy is now live)/i.test(message);
     setNoticeType(successMessage ? "success" : "error");
   }
+
+  const refreshNotifications = useCallback(async () => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setNotificationsError("Notifications are unavailable until the workspace connects to Supabase.");
+      return;
+    }
+
+    setNotificationsLoading(true);
+    setNotificationsError("");
+    try {
+      const [listResult, unreadResult] = await Promise.all([
+        supabase
+          .from("notifications")
+          .select("id,notification_type,title,message,vacancy_id,created_at,read_at")
+          .order("created_at", { ascending: false })
+          .limit(30),
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .is("read_at", null),
+      ]);
+      const queryError = listResult.error?.message ?? unreadResult.error?.message;
+      if (queryError) throw new Error(queryError);
+      setNotifications((listResult.data ?? []) as UserNotification[]);
+      setUnreadNotificationCount(unreadResult.count ?? 0);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The notification service could not be reached.";
+      setNotificationsError(`Could not load notifications: ${message}`);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  async function openNotification(notification: UserNotification) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    if (!notification.read_at) {
+      const readAt = new Date().toISOString();
+      try {
+        const { error } = await supabase
+          .from("notifications")
+          .update({ read_at: readAt })
+          .eq("id", notification.id);
+        if (error) throw new Error(error.message);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "The notification service could not be reached.";
+        setNotificationsError(`Could not mark notification as read: ${message}`);
+        return;
+      }
+      setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read_at: readAt } : item));
+      setUnreadNotificationCount((count) => Math.max(0, count - 1));
+    }
+    setNotificationPanelOpen(false);
+    if (notification.notification_type === "new_vacancy" && notification.vacancy_id) {
+      setActiveNav("Discover");
+      const vacancy = vacancies.find((item) => item.id === notification.vacancy_id);
+      if (vacancy) setSelectedVacancy(vacancy);
+      else setVacanciesRefreshKey((key) => key + 1);
+    } else {
+      setActiveNav("Subscription");
+    }
+  }
+
+  useEffect(() => {
+    if (!enteredWorkspace) {
+      setNotifications([]);
+      setUnreadNotificationCount(0);
+      setNotificationPanelOpen(false);
+      return;
+    }
+    void refreshNotifications();
+    const intervalId = window.setInterval(() => void refreshNotifications(), 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [enteredWorkspace, refreshNotifications]);
 
   function updateTeacherCv(field: keyof TeacherCv, value: string) {
     setTeacherCv((current) => ({ ...current, [field]: value }));
@@ -1025,11 +1122,15 @@ export default function Home() {
       setModal(null);
     } catch (error) {
       const cancelled = error instanceof Error && (error.name === "NotAllowedError" || error.name === "AbortError");
+      const errorMessage = error instanceof Error ? error.message : "";
+      const missingPasskey = /no (?:passkey|credential)|passkey.{0,30}(?:not found|not registered|not available)|credential.{0,30}(?:not found|not available)/i.test(errorMessage);
       setAuthFeedback({
         type: "error",
-        message: cancelled
-          ? "Passkey sign-in was cancelled or timed out. Please try again."
-          : `Could not sign in with a passkey: ${error instanceof Error ? error.message : "Please try again."}`,
+        message: missingPasskey
+          ? "No passkey is set up for this account yet. Sign in with your email and password first, then add a passkey from Profile."
+          : cancelled
+            ? "Passkey sign-in was cancelled or timed out. If you haven’t set up a passkey yet, sign in with your email and password first, then add one from Profile."
+            : `Could not sign in with a passkey: ${errorMessage || "Please try again."}`,
       });
     } finally {
       setPasskeyLoading(false);
@@ -1795,6 +1896,7 @@ export default function Home() {
           <h2 id="modal-heading">{loginChallenge ? "Enter your sign-in code." : authMode === "signup" ? "Join the community." : "Reset your password."}</h2>
         </>}
         <p className="modal-description">{loginChallenge ? `Enter the six-digit code sent to ${loginChallenge.email}.` : authMode === "signup" ? "Create a free teacher account to view and apply for opportunities across Kenya." : authMode === "forgot-password" ? "Enter the email address linked to your account. We’ll send you a secure link to choose a new password." : "Sign in with your password. We’ll email you a one-time code to finish signing in."}</p>
+        {authFeedback && <p className={`auth-feedback ${authFeedback.type}`} role={authFeedback.type === "error" ? "alert" : "status"}>{authFeedback.message}</p>}
         {loginChallenge ? <>
           <form className="modal-form" onSubmit={(event) => { event.preventDefault(); void verifyLoginOtp(loginOtp); }} aria-busy={loading}>
             <label>Email one-time code<span className="auth-otp-inputs" role="group" aria-label="Six-digit sign-in code">
@@ -1947,7 +2049,47 @@ export default function Home() {
         <div className="breadcrumb"><span>{roleInfo[role].name} workspace</span><span className="crumb-slash">/</span><strong>{role === "institution" && activeNav === "My vacancies" ? "Vacancies" : activeNav}</strong></div>
         <div className="topbar-actions">
           <span className="connection-pill connected"><i />Secure workspace</span>
-          <button className="icon-button notification-button" aria-label="Notifications"><Icon name="bell" size={19} /></button>
+          <div className="notification-menu">
+            <button
+              className="icon-button notification-button"
+              aria-label={unreadNotificationCount ? `Notifications, ${unreadNotificationCount} unread` : "Notifications"}
+              aria-expanded={notificationPanelOpen}
+              aria-haspopup="true"
+              onClick={() => {
+                const open = !notificationPanelOpen;
+                setNotificationPanelOpen(open);
+                setAccountMenuOpen(false);
+                if (open) void refreshNotifications();
+              }}
+            >
+              <Icon name="bell" size={19} />
+              {unreadNotificationCount > 0 && <span className="notification-count">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}
+            </button>
+            {notificationPanelOpen && <section className="notification-panel" aria-label="Notifications">
+              <div className="notification-panel-heading">
+                <div><strong>Notifications</strong><span>{unreadNotificationCount ? `${unreadNotificationCount} unread` : "You’re all caught up"}</span></div>
+                <button className="notification-refresh" onClick={() => void refreshNotifications()} disabled={notificationsLoading} aria-label="Refresh notifications">Refresh</button>
+              </div>
+              {notificationsError && <p className="notification-panel-error" role="alert">{notificationsError}</p>}
+              {notificationsLoading && notifications.length === 0
+                ? <p className="notification-panel-empty" role="status">Loading notifications…</p>
+                : notifications.length === 0
+                  ? <p className="notification-panel-empty">New vacancy and subscription reminders will appear here.</p>
+                  : <div className="notification-list">
+                    {notifications.map((notification) => (
+                      <button
+                        key={notification.id}
+                        className={`notification-item${notification.read_at ? "" : " is-unread"}`}
+                        onClick={() => void openNotification(notification)}
+                      >
+                        <span className="notification-item-title">{notification.title}</span>
+                        <span className="notification-item-message">{notification.message}</span>
+                        <time dateTime={notification.created_at}>{formatNotificationTime(notification.created_at)}</time>
+                      </button>
+                    ))}
+                  </div>}
+            </section>}
+          </div>
           <div className="account-menu">
             <button className="account-trigger" aria-label={`Account menu for ${roleInfo[role].name}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} onClick={() => setAccountMenuOpen((open) => !open)}>
               <Icon name="profile" size={19} />
