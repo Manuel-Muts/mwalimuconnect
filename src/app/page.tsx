@@ -2237,7 +2237,7 @@ export default function Home() {
               <label className="select-field"><select aria-label="Filter by subcounty" value={subcounty} onChange={(event) => { setSubcounty(event.target.value); setSelectedVacancy(null); }} disabled={county === "All counties"}>{subcounties.map((item) => <option key={item}>{item}</option>)}</select><span className="select-chevron">⌄</span></label>
               <label className="select-field level-select"><select aria-label="Filter by school level" value={level} onChange={(event) => { setLevel(event.target.value); setSelectedVacancy(null); }}>{levels.map((item) => <option key={item}>{item}</option>)}</select><span className="select-chevron">⌄</span></label>
             </div>
-            <div className="opportunity-table-wrap">
+            <div className="opportunity-table-wrap opportunity-desktop-table">
               <table className="opportunity-table">
                 <thead><tr><th scope="col">Opportunity</th><th scope="col">School</th><th scope="col">Location</th><th scope="col">Level</th><th scope="col">Posted</th><th scope="col">Applications</th><th scope="col"><span className="visually-hidden">Actions</span></th></tr></thead>
                 <tbody>
@@ -2254,6 +2254,27 @@ export default function Home() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="opportunity-mobile-list">
+              {visibleVacancies.map((job) => (
+                <article className="opportunity-mobile-card" key={job.id}>
+                  <div className="opportunity-mobile-card-heading">
+                    <div>
+                      <button className="opportunity-title" aria-haspopup="dialog" onClick={() => setSelectedVacancy(job)}>{job.title}</button>
+                      <span className="opportunity-category">{job.category} · {job.type}</span>
+                    </div>
+                    <button className={`bookmark-button ${saved.includes(job.id) ? "is-saved" : ""}`} aria-label={saved.includes(job.id) ? `Remove ${job.title} from saved opportunities` : `Save ${job.title}`} aria-pressed={saved.includes(job.id)} onClick={() => setSaved((current) => current.includes(job.id) ? current.filter((id) => id !== job.id) : [...current, job.id])}><Icon name="saved" size={16} /></button>
+                  </div>
+                  <strong className="opportunity-mobile-school">{job.institution}</strong>
+                  <div className="opportunity-mobile-details">
+                    <span><small>Location</small><strong>{job.subcounty ? `${job.subcounty}, ` : ""}{job.county}</strong></span>
+                    <span><small>Level</small><strong>{job.level}</strong></span>
+                    <span><small>Posted</small><strong>{new Date(job.postedAt).toLocaleDateString()}</strong></span>
+                    <span><small>Applications</small><strong><span className={`status-badge ${isVacancyOpen(job.applicationDeadline) ? "status-open" : "status-closed"}`}>{isVacancyOpen(job.applicationDeadline) ? "Open" : "Closed"}</span></strong></span>
+                  </div>
+                  <button className="opportunity-mobile-details-button" aria-label={`View details for ${job.title}`} aria-haspopup="dialog" onClick={() => setSelectedVacancy(job)}>View opportunity details <Icon name="arrow" size={15} /></button>
+                </article>
+              ))}
             </div>
               {visibleVacancies.length === 0 && <div className="empty-state"><span>✳</span><strong>{emptyVacancyTitle}</strong><p>{emptyVacancyDescription}</p>{activeNav !== "Discover" && <button className="text-button" onClick={() => setActiveNav("Discover")}>Explore opportunities <Icon name="arrow" size={15} /></button>}</div>}
           </section>}

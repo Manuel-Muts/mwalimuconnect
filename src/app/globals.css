@@ -432,6 +432,19 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
 .new-opportunity-badge { padding: 3px 6px; color: #28784e; border-radius: 999px; background: #eaf4eb; font-size: 8px; font-weight: 700; letter-spacing: .3px; }
 .opportunity-actions { display: flex; align-items: center; gap: 7px; }
 .details-link { padding: 4px 0; color: #397550; border: 0; background: none; font-size: 9px; font-weight: 700; }
+.opportunity-mobile-list { display: none; }
+.opportunity-mobile-card { min-width: 0; padding: 14px; border: 1px solid #e6ece7; border-radius: 9px; background: #fff; }
+.opportunity-mobile-card-heading { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.opportunity-mobile-card-heading > div { min-width: 0; }
+.opportunity-mobile-card .opportunity-title { max-width: 100%; overflow-wrap: anywhere; }
+.opportunity-mobile-school { display: block; margin-top: 10px; color: #617168; font-size: 10px; overflow-wrap: anywhere; }
+.opportunity-mobile-details { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px 14px; margin-top: 13px; padding-top: 12px; border-top: 1px solid #edf0ed; }
+.opportunity-mobile-details > span { display: grid; min-width: 0; align-content: start; gap: 4px; }
+.opportunity-mobile-details small { color: #929b95; font-size: 8px; }
+.opportunity-mobile-details strong { color: #57675d; font-size: 9px; font-weight: 600; overflow-wrap: anywhere; }
+.opportunity-mobile-details .status-badge { justify-self: start; }
+.opportunity-mobile-details-button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding: 10px 0 0; color: #28784e; border: 0; border-top: 1px solid #edf0ed; background: transparent; font-size: 9px; font-weight: 700; text-align: left; }
+.opportunity-mobile-details-button svg { flex: 0 0 auto; }
 .vacancy-details-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; overflow-y: auto; place-items: center; padding: 24px; background: #10251dcc; backdrop-filter: blur(4px); }
 .vacancy-details-modal { position: relative; width: min(100%, 720px); max-height: min(840px, calc(100vh - 48px)); overflow-y: auto; overscroll-behavior: contain; padding: 36px 40px 30px; border: 1px solid #e3ebe3; border-radius: 16px; background: #fff; box-shadow: 0 24px 80px #10251d40; }
 .vacancy-details-close { position: absolute; top: 16px; right: 16px; display: grid; width: 36px; height: 36px; place-items: center; color: #718078; border: 1px solid #e8eee8; border-radius: 9px; background: #f7faf7; }
@@ -774,11 +787,13 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .filter-bar { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .search-field { min-width: 0; grid-column: 1 / -1; }
   .select-field, .level-select { min-width: 0; }
-  .mobile-nav { position: fixed !important; top: auto !important; right: 0 !important; bottom: 0 !important; left: 0 !important; z-index: 1000; display: flex; width: 100%; max-width: 100vw; height: calc(62px + env(safe-area-inset-bottom)); align-items: flex-start; justify-content: stretch; gap: 0; overflow: hidden; padding: 8px max(8px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px, env(safe-area-inset-left)); border-top: 1px solid #dfe9df; background: #f1f6f1; box-shadow: 0 -6px 20px rgba(27,55,37,.06); transform: none !important; }
+  .mobile-nav { position: fixed !important; top: auto !important; right: 0 !important; bottom: 0 !important; left: 0 !important; z-index: 1000; display: flex; width: auto; max-width: none; height: calc(62px + env(safe-area-inset-bottom, 0px)); align-items: flex-start; justify-content: stretch; gap: 0; overflow: hidden; padding: 8px max(8px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(8px, env(safe-area-inset-left, 0px)); border-top: 1px solid #dfe9df; background: #f1f6f1; box-shadow: 0 -6px 20px rgba(27,55,37,.06); transform: none !important; }
   .mobile-nav button { display: flex; min-width: 0; flex: 1 1 0; flex-direction: column; align-items: center; gap: 4px; padding: 4px 1px; color: #939c95; border: 0; background: none; font-size: 8px; }
   .mobile-nav button span { max-width: 100%; overflow-wrap: anywhere; text-align: center; line-height: 1.1; }
   .mobile-nav button.active { color: #23774c; font-weight: 700; }
   .mobile-nav button.active svg { stroke-width: 2.1; }
+  .opportunity-desktop-table { display: none; }
+  .opportunity-mobile-list { display: grid; min-width: 0; gap: 9px; }
   .modal-backdrop { z-index: 60; }
   .auth-toast { top: max(12px, env(safe-area-inset-top)); z-index: 80; width: calc(100% - max(24px, env(safe-area-inset-left)) - max(24px, env(safe-area-inset-right))); padding: 13px 15px; font-size: 12px; }
   .notification-button { width: 28px; }
@@ -823,7 +838,7 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .connection-pill i { width: 7px; height: 7px; }
   .topbar-actions { gap: 9px; }
   .account-trigger { width: 34px; height: 34px; }
-  .page-content { padding: 22px 15px 85px; }
+  .page-content { padding: 22px 15px calc(78px + env(safe-area-inset-bottom, 0px)); }
   .welcome-row { display: block; margin-bottom: 17px; }
   .welcome-row > div:first-child { min-width: 0; }
   h1 { font-size: 25px; }
@@ -859,8 +874,6 @@ kbd { flex: 0 0 auto; padding: 3px 5px; color: #9aa39d; border: 1px solid #ebefe
   .search-field { grid-column: 1 / -1; height: 40px; }
   .select-field { min-width: 0; height: 36px; }
   .level-select { min-width: 0; }
-  .opportunity-table th, .opportunity-table td { padding: 10px 9px; }
-  .opportunity-table { min-width: 720px; }
   .bookmark-button { width: 29px; height: 29px; }
   .apply-button { min-width: 80px; height: 29px; gap: 5px; font-size: 8px; }
   .vacancy-details-backdrop { padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); }
