@@ -1961,7 +1961,7 @@ export default function Home() {
           <span className="job-category">{loginChallenge ? "EMAIL VERIFICATION" : authMode === "signup" ? "YOUR NEXT CHAPTER" : "ACCOUNT RECOVERY"}</span>
           <h2 id="modal-heading">{loginChallenge ? "Enter your sign-in code." : authMode === "signup" ? "Join the community." : "Reset your password."}</h2>
         </>}
-        <p className="modal-description">{loginChallenge ? `Enter the six-digit code sent to ${loginChallenge.email}.` : authMode === "signup" ? "Create a free teacher account to view and apply for opportunities across Kenya." : authMode === "forgot-password" ? "Enter the email address linked to your account. We’ll send you a secure link to choose a new password." : "Sign in with your password. We’ll email you a one-time code to finish signing in."}</p>
+        <p className="modal-description">{loginChallenge ? `Enter the six-digit code sent to ${loginChallenge.email}.` : authMode === "signup" ? <>Create a <strong className="auth-free-account">free teacher account</strong> to view and apply for opportunities across Kenya.</> : authMode === "forgot-password" ? "Enter the email address linked to your account. We’ll send you a secure link to choose a new password." : "Sign in with your password. We’ll email you a one-time code to finish signing in."}</p>
         {authFeedback && <p className={`auth-feedback ${authFeedback.type}`} role={authFeedback.type === "error" ? "alert" : "status"}>{authFeedback.message}</p>}
         {loginChallenge ? <>
           <form className="modal-form" onSubmit={(event) => { event.preventDefault(); void verifyLoginOtp(loginOtp); }} aria-busy={loading}>
@@ -2031,7 +2031,42 @@ export default function Home() {
 
   if (!enteredWorkspace) {
     if (authInitializing || workspaceLoading) {
-      return <div className="auth-loading" role="status">Loading your secure workspace…</div>;
+      return (
+        <div className="auth-loading" role="status" aria-live="polite" aria-busy="true">
+          <section className="workspace-loader">
+            <div className="workspace-loader-brand">
+              <span className="brand-mark"><span /></span>
+              <span>mwalimu<span>connect</span></span>
+            </div>
+            <div className="workspace-loader-visual" aria-hidden="true">
+              <div className="workspace-loader-orbit workspace-loader-orbit-one" />
+              <div className="workspace-loader-orbit workspace-loader-orbit-two" />
+              <div className="workspace-loader-window">
+                <div className="workspace-loader-window-top"><i /><i /><i /><span /></div>
+                <div className="workspace-loader-window-body">
+                  <div className="workspace-loader-window-sidebar"><i /><i /><i /><i /></div>
+                  <div className="workspace-loader-window-content">
+                    <i className="workspace-loader-title-line" />
+                    <i className="workspace-loader-subtitle-line" />
+                    <div className="workspace-loader-stat-row"><i /><i /><i /></div>
+                    <i className="workspace-loader-content-line" />
+                    <i className="workspace-loader-content-line short" />
+                  </div>
+                </div>
+              </div>
+              <span className="workspace-loader-spark workspace-loader-spark-one">✳</span>
+              <span className="workspace-loader-spark workspace-loader-spark-two">✦</span>
+            </div>
+            <div className="workspace-loader-copy">
+              <span className="job-category">YOUR WORKSPACE</span>
+              <h1>Getting everything ready.</h1>
+              <p>Securely preparing your account and opportunities.</p>
+            </div>
+            <div className="workspace-loader-progress" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div>
+            <span className="workspace-loader-caption">This will only take a moment</span>
+          </section>
+        </div>
+      );
     }
     if (passwordRecoveryRequired) {
       return (
@@ -2359,7 +2394,8 @@ export default function Home() {
               {applicantsLoading && <p className="no-vacancies">Loading applications…</p>}
               {!applicantsLoading && institutionActiveVacancies.length === 0 && <p className="no-vacancies">Your institution has no active vacancies currently accepting applications. Post a vacancy to receive applicants.</p>}
               {!applicantsLoading && selectedInstitutionVacancy && selectedInstitutionApplicants.length === 0 && <p className="no-vacancies">No applications have arrived for this vacancy yet.</p>}
-              {selectedInstitutionApplicants.length > 0 && <div className="applicant-table-wrap">
+              {selectedInstitutionApplicants.length > 0 && <>
+                <div className="applicant-table-wrap institution-applicant-table">
                 <table className="applicant-table">
                   <thead><tr><th scope="col">Applicant</th><th scope="col">Contact</th><th scope="col">Experience</th><th scope="col">Applied</th><th scope="col"><span className="visually-hidden">CV details</span></th></tr></thead>
                   <tbody>{selectedInstitutionApplicants.map((applicant) => (
@@ -2373,7 +2409,24 @@ export default function Home() {
                   ))}
                   </tbody>
                 </table>
-              </div>}
+                </div>
+                <div className="institution-applicant-cards">
+                  {selectedInstitutionApplicants.map((applicant) => (
+                    <article className="institution-applicant-card" key={applicant.id}>
+                      <div className="institution-applicant-card-heading">
+                        <div className="applicant-table-name"><span>{applicant.cv.professional_title || "TEACHER APPLICANT"}</span><strong>{applicant.cv.full_name}</strong></div>
+                        <strong className="institution-applicant-experience">{applicant.cv.years_experience} years</strong>
+                      </div>
+                      <div className="institution-applicant-card-contact">
+                        <a href={`mailto:${applicant.cv.email}`}>{applicant.cv.email}</a>
+                        {applicant.cv.phone && <a href={`tel:${applicant.cv.phone}`}>{applicant.cv.phone}</a>}
+                      </div>
+                      <time className="institution-applicant-applied" dateTime={applicant.appliedAt}>Applied {new Date(applicant.appliedAt).toLocaleString()}</time>
+                      <button className="outline-button applicant-cv-button" aria-haspopup="dialog" aria-label={`View CV for ${applicant.cv.full_name}`} onClick={() => setSelectedApplicantId(applicant.id)}>View CV</button>
+                    </article>
+                  ))}
+                </div>
+              </>}
             </div>}
             {activeNav === "My vacancies" && <div className="institution-vacancy-list">
               <div className="institution-vacancy-heading"><h3>Your vacancies</h3><span>{institutionVacancies.length} {institutionVacancies.length === 1 ? "vacancy" : "vacancies"}</span></div>
@@ -2516,8 +2569,8 @@ export default function Home() {
         document.body,
       )}
 
-      {modal && <div className="modal-backdrop" onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}>
-        <section className={`modal-card${modal === "institution" || modal === "edit-institution" ? " institution-modal-card" : modal === "vacancy" ? " vacancy-modal-card" : modal === "auth" ? ` auth-modal-card${authMode === "signup" && !loginChallenge ? " is-signup" : ""}` : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+      {modal && typeof document !== "undefined" && createPortal(<div className={`modal-backdrop${modal === "profile" ? " profile-modal-backdrop" : ""}`} onMouseDown={(event) => { if (!loading && event.target === event.currentTarget) setModal(null); }}>
+        <section className={`modal-card${modal === "profile" ? " profile-modal-card" : modal === "institution" || modal === "edit-institution" ? " institution-modal-card" : modal === "vacancy" ? " vacancy-modal-card" : modal === "auth" ? ` auth-modal-card${authMode === "signup" && !loginChallenge ? " is-signup" : ""}` : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-heading">
           {modal === "auth" ? authForm() : <>
             <button className="modal-close" onClick={() => setModal(null)} aria-label="Close" disabled={loading}><Icon name="close" size={19} /></button>
             <div className="modal-mark"><span className="brand-mark"><span /></span></div>
@@ -2599,7 +2652,7 @@ export default function Home() {
             </>}
           </>}
         </section>
-      </div>}
+      </div>, document.body)}
     </>
   );
 }

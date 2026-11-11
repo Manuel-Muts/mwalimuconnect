@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type LandingPageProps = {
@@ -233,7 +234,17 @@ export default function LandingPage({
           <a href="#opportunities">Opportunities</a>
           <a href="#how-it-works">How it works</a>
           <button onClick={onSchools}>For schools</button>
+          <Link href="/about">About</Link>
         </nav>
+        <details className="landing-mobile-menu">
+          <summary aria-label="Open site navigation"><span className="landing-menu-icon" aria-hidden="true"><i /><i /><i /></span><span>Menu</span></summary>
+          <nav aria-label="Mobile site navigation">
+            <Link href="/about">About MwalimuConnect</Link>
+            <a href="#opportunities">Opportunities</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#schools">For schools</a>
+          </nav>
+        </details>
         <div className="landing-header-actions">
           <button className="landing-login" onClick={onSignIn}>Log in</button>
           <button className="landing-signup" onClick={onJoin}>Join the community <span aria-hidden="true">↗</span></button>
@@ -351,6 +362,7 @@ export default function LandingPage({
           <path d="M16 3.1A12.6 12.6 0 0 0 5.2 22.2L3.5 28.5l6.5-1.7A12.6 12.6 0 1 0 16 3.1Z" />
           <path d="M12.1 9.2c-.3-.7-.6-.7-.9-.7h-.8c-.3 0-.7.1-1 .5-.3.4-1.3 1.3-1.3 3.1s1.3 3.6 1.5 3.8c.2.3 2.5 4 6.2 5.4 3.1 1.2 3.7 1 4.4.9.7-.1 2.3-.9 2.6-1.8.3-.9.3-1.6.2-1.8-.1-.2-.3-.3-.7-.5l-2.5-1.2c-.3-.1-.6-.2-.8.2-.2.3-.9 1.2-1.1 1.5-.2.2-.4.3-.8.1-.4-.2-1.7-.6-3.2-2-.9-.8-1.5-1.8-1.7-2.2-.2-.4 0-.6.2-.8l.6-.7c.2-.2.3-.4.4-.6.1-.2 0-.5 0-.7l-1.3-2.6Z" />
         </svg>
+        <span>Talk to us</span>
       </a>
     </main>
   );
